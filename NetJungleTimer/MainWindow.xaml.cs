@@ -50,6 +50,7 @@ namespace NetJungleTimer
 
         YesImRunningWindow yirw;
         private Mutex m;
+        private bool propagateExit = false;
 
         private bool _isMaster;
         public bool isMaster
@@ -200,6 +201,13 @@ namespace NetJungleTimer
 
         private void processingTimer_Tick(object sender, EventArgs e)
         {
+            if (propagateExit)
+            {
+                keyboardManager.EnsureNumLockEnabled();
+                System.Environment.Exit(0);
+            }
+
+
             StringBuilder sb = new StringBuilder(256);
             IntPtr tempHandle = WindowsApi.GetForegroundWindowHandle();
             String windowCaption = WindowsApi.GetWindowCaption(tempHandle);
@@ -209,6 +217,7 @@ namespace NetJungleTimer
             // okay, so now we have the name of this mystery foreground window...
             if (windowCaption.ToLower().Contains("league of legends (tm) client"))
             {
+                keyboardManager.EnsureNumLockEnabled();
                 yirw.Visibility = Visibility.Hidden;
                 yirw.Left = 0;
                 yirw.Top = 0;
@@ -259,11 +268,12 @@ namespace NetJungleTimer
             
         }
 
-        public void OnHotKeyHandler(KeyboardManager.KMKey key)
+        public bool OnHotKeyHandler(KeyboardManager.KMKey key)
         {
             if (key.Key == Key.NumLock)
             {
-                System.Environment.Exit(0);
+                propagateExit = true;
+                return true;
             }
             else if (key.Equals(new KeyboardManager.KMKey(Key.F9, true, true, false)))
             {
@@ -273,10 +283,14 @@ namespace NetJungleTimer
                 }
             }
 
+            bool suppress = false;
+
             foreach (JungleTimer jt in jungleTimers)
             {
-                jt.GotKey(key);
+                if (jt.GotKey(key))
+                    suppress = true;
             }
+            return suppress;
         }
 
         public void NetBroadcast(String what)

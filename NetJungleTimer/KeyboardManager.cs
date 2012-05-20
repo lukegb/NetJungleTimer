@@ -96,7 +96,7 @@ namespace NetJungleTimer
                     other.CtrlDown == this.CtrlDown &&
                     other.AltDown == this.AltDown &&
                     other.ShiftDown == this.ShiftDown
-                    ) ;
+                    );
             }
 
             public override bool Equals(object obj)
@@ -111,7 +111,7 @@ namespace NetJungleTimer
                     return Equals(kmkObj);
             }
 
-            public static bool operator == (KMKey kmk1, KMKey kmk2)
+            public static bool operator ==(KMKey kmk1, KMKey kmk2)
             {
                 if ((object)kmk1 == null || (object)kmk2 == null)
                     return Object.Equals(kmk1, kmk2);
@@ -119,7 +119,7 @@ namespace NetJungleTimer
                 return kmk1.Equals(kmk2);
             }
 
-            public static bool operator != (KMKey kmk1, KMKey kmk2)
+            public static bool operator !=(KMKey kmk1, KMKey kmk2)
             {
                 return !(kmk1 == kmk2);
             }
@@ -164,17 +164,22 @@ namespace NetJungleTimer
 
             Key pressedKey = KeyInterop.KeyFromVirtualKey((int)lParam.vkCode); // let's convert the key to a key :P
 
+            bool suppress = false;
+
             switch (wParam.ToInt32())
             {
                 case (Int32)WindowsApi.User32.KeyboardMessageType.WM_KEYDOWN:
                 case (Int32)WindowsApi.User32.KeyboardMessageType.WM_SYSKEYDOWN:
-                    KeyDown(pressedKey);
+                    suppress = KeyDown(pressedKey);
                     break;
                 case (Int32)WindowsApi.User32.KeyboardMessageType.WM_KEYUP:
                 case (Int32)WindowsApi.User32.KeyboardMessageType.WM_SYSKEYUP:
-                    KeyUp(pressedKey);
+                    suppress = KeyUp(pressedKey);
                     break;
             }
+
+            if (suppress)
+                return 1;
 
             return WindowsApi.User32.CallNextHookEx(IntPtr.Zero, code, wParam, lParam);
         }
@@ -212,43 +217,44 @@ namespace NetJungleTimer
             }
         }
 
-        private void KeyDown(Key whatKey)
+        private bool KeyDown(Key whatKey)
         {
             if (whatKey == Key.LeftCtrl || whatKey == Key.RightCtrl)
-                return;
+                return false;
             else if (whatKey == Key.LeftAlt || whatKey == Key.RightAlt)
-                return;
+                return false;
             else if (whatKey == Key.LeftShift || whatKey == Key.RightShift)
-                return;
+                return false;
             else
             {
                 foreach (KMKey kmk in keysPressed)
                 {
                     if (kmk.Key.Equals(whatKey))
                     {
-                        return;
+                        return false;
                     }
                 }
 
                 ResetControlKeys();
                 KMKey akmk = new KMKey(whatKey, ctrlDown, altDown, shiftDown);
                 keysPressed.Add(akmk);
-                                
+
                 if (runningKeys.Contains(akmk))
                 {
-                    parent.OnHotKeyHandler(akmk);
+                    return parent.OnHotKeyHandler(akmk);
                 }
+                return false;
             }
         }
 
-        private void KeyUp(Key whatKey)
+        private bool KeyUp(Key whatKey)
         {
             if (whatKey == Key.LeftCtrl || whatKey == Key.RightCtrl)
-                return;
+                return false;
             else if (whatKey == Key.LeftAlt || whatKey == Key.RightAlt)
-                return;
+                return false;
             else if (whatKey == Key.LeftShift || whatKey == Key.RightShift)
-                return;
+                return false;
             else
             {
                 KMKey[] keysPressedA = new KMKey[keysPressed.Count()];
@@ -261,12 +267,59 @@ namespace NetJungleTimer
                         break;
                     }
                 }
+                return false;
             }
         }
 
         public void ListenToKey(KMKey newKeyKey)
         {
             runningKeys.Add(newKeyKey);
+        }
+
+        public void EnsureNumLockEnabled()
+        {
+            int keystate = WindowsApi.GetKeyState(KeyInterop.VirtualKeyFromKey(Key.NumLock));
+
+            if (!Console.NumberLock)
+            {
+                Console.WriteLine("SENDING INPUT");
+                var inputSet = new[]
+                   {
+                       new WindowsApi.User32.INPUT()
+                       {
+                           type = (int)WindowsApi.User32.INPUT_KEYBOARD,
+                           u = new WindowsApi.User32.InputUnion()
+                           {
+                               ki = new WindowsApi.User32.KEYBDINPUT
+                               {
+                                   wScan = 0,
+                                   wVk = (ushort)WindowsApi.User32.VirtualKeyShort.NUMLOCK,
+                                   dwFlags = 0,
+                                   dwExtraInfo = WindowsApi.User32.GetMessageExtraInfo(),
+                                   time = 0
+                               }
+                           }
+                       },
+                       new WindowsApi.User32.INPUT()
+                       {
+                           type = (int)WindowsApi.User32.INPUT_KEYBOARD,
+                           u = new WindowsApi.User32.InputUnion()
+                           {
+                               ki = new WindowsApi.User32.KEYBDINPUT
+                               {
+                                   wScan = 0,
+                                   wVk = (ushort)WindowsApi.User32.VirtualKeyShort.NUMLOCK,
+                                   dwFlags = (ushort)WindowsApi.User32.KEYEVENTF.KEYUP,
+                                   dwExtraInfo = WindowsApi.User32.GetMessageExtraInfo(),
+                                   time = 0
+                               }
+                           }
+                       }
+                   };
+                WindowsApi.User32.SendInput((uint)inputSet.Length, inputSet, Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
+                int lasterr = Marshal.GetLastWin32Error();
+                Console.WriteLine(lasterr);
+            }
         }
     }
 }

@@ -162,14 +162,16 @@ namespace NetJungleTimer
             }
         }
 
-        internal void GotKey(KeyboardManager.KMKey hotKey)
+        internal bool GotKey(KeyboardManager.KMKey hotKey)
         {
             if (hotKey.Equals(myHotkey))
             {
                 // yay
                 parent.NetBroadcast("JUNGLETIMER " + netMessage + " " + countdown.ToString());
                 StartCountdown(countdown);
+                return true;
             }
+            return false;
         }
 
         internal void SyncData()
