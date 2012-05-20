@@ -219,7 +219,6 @@ namespace NetJungleTimer
 
         public void OnHotKeyHandler(KeyboardManager.KMKey key)
         {
-            Console.WriteLine(key);
             if (key.Key == Key.NumLock)
             {
                 System.Environment.Exit(0);
@@ -228,7 +227,6 @@ namespace NetJungleTimer
             {
                 if (leagueOfLegendsWindowHndl != IntPtr.Zero) // if we've already FOUND the LoL window...
                 {
-                    Console.WriteLine("HEY!");
                     WindowsApi.MoveWindowToSensibleLocation(leagueOfLegendsWindowHndl);
                 }
             }

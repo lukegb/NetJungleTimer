@@ -175,7 +175,6 @@ namespace NetJungleTimer
                     KeyUp(pressedKey);
                     break;
             }
-            //Console.WriteLine(pressedKey);
 
             return WindowsApi.User32.CallNextHookEx(IntPtr.Zero, code, wParam, lParam);
         }
@@ -234,14 +233,7 @@ namespace NetJungleTimer
                 ResetControlKeys();
                 KMKey akmk = new KMKey(whatKey, ctrlDown, altDown, shiftDown);
                 keysPressed.Add(akmk);
-
-#if false
-                foreach (KMKey kmk in runningKeys)
-                {
-                    Console.WriteLine("{1} - {0}", kmk, kmk.Equals(akmk));
-                }
-#endif
-                
+                                
                 if (runningKeys.Contains(akmk))
                 {
                     parent.OnHotKeyHandler(akmk);
@@ -259,14 +251,12 @@ namespace NetJungleTimer
                 return;
             else
             {
-                //Console.WriteLine(whatKey);
                 KMKey[] keysPressedA = new KMKey[keysPressed.Count()];
                 keysPressed.CopyTo(keysPressedA, 0);
                 foreach (KMKey kmk in keysPressedA)
                 {
                     if (kmk.Key.Equals(whatKey))
                     {
-                        //Console.WriteLine("KEYUP: {0} (ctrl: {1}, alt: {2}, shift: {3})", whatKey, kmk.CtrlDown, kmk.AltDown, kmk.ShiftDown);
                         keysPressed.Remove(kmk);
                         break;
                     }
