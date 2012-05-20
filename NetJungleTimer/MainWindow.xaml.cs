@@ -64,10 +64,10 @@ namespace NetJungleTimer
             }
         }
 
+        DateTime masterLastResyncedData;
+
         public MainWindow()
         {
-            netJungleProto = new NetProto(this, REMOTE_SERVER, REMOTE_PORT);
-
             InitializeComponent();
 
             yirw = new YesImRunningWindow();
@@ -83,6 +83,12 @@ namespace NetJungleTimer
 
         protected void ResetState()
         {
+
+            // set up networking
+            isMaster = false;
+            netJungleProto = new NetProto(this, REMOTE_SERVER, REMOTE_PORT);
+            netJungleProto.Go();
+
             keyboardManager = new KeyboardManager(this);
 
             // let's go
@@ -136,20 +142,51 @@ namespace NetJungleTimer
             processingTimer.Interval = TimeSpan.FromMilliseconds(PROCESSING_TIMER_TICK);
             processingTimer.Tick += new EventHandler(processingTimer_Tick);
             processingTimer.Start();
-
-            netJungleProto.Go();
         }
 
         public void OnNetworkMessage(String message)
         {
-            connectionStatusText.Content = String.Format("Received: {0}", message);
-
             if (message.StartsWith("JUNGLETIMER "))
             {
                 foreach (JungleTimer jt in jungleTimers)
                 {
                     jt.GotMessage(message);
                 }
+            }
+            else if (message.StartsWith("!DISCONNECT"))
+            {
+                connectionStatusText.Content = "Connection lost";
+            }
+            else if (message.StartsWith("&NOTMASTER"))
+            {
+                isMaster = false;
+            }
+            else if (message.StartsWith("&NEWMASTER"))
+            {
+                isMaster = true;
+                SyncData();
+            }
+            else if (message.StartsWith("CONN") && isMaster)
+            {
+                SyncData();
+            }
+
+            if (isMaster)
+                connectionStatusText.Content = "Connected [MASTER]";
+            else
+                connectionStatusText.Content = "Connected";
+        }
+
+        private void SyncData()
+        {
+            if (!isMaster)
+                return;
+
+            masterLastResyncedData = DateTime.Now;
+
+            foreach (JungleTimer jt in jungleTimers)
+            {
+                jt.SyncData();
             }
         }
 
@@ -205,7 +242,7 @@ namespace NetJungleTimer
 
             sb = null; // nuke the stringbuilder
 
-            
+
             if (leagueOfLegendsWindowHndl != IntPtr.Zero) // if we've already FOUND the LoL window...
             {
                 uint lolWindowStyle = WindowsApi.GetWindowStyle(leagueOfLegendsWindowHndl);
@@ -213,6 +250,11 @@ namespace NetJungleTimer
                 {
                     this.ResetState();
                 }
+            }
+
+            if (isMaster && masterLastResyncedData.Add(new TimeSpan(0, 0, 20)) < DateTime.Now)
+            {
+                this.SyncData();
             }
             
         }

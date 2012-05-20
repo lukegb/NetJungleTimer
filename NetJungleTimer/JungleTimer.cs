@@ -171,5 +171,10 @@ namespace NetJungleTimer
                 StartCountdown(countdown);
             }
         }
+
+        internal void SyncData()
+        {
+            parent.NetBroadcast("JUNGLETIMER " + netMessage + " " + Math.Min(countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
+        }
     }
 }

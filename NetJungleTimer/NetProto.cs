@@ -34,21 +34,34 @@ namespace NetJungleTimer
         {
             ThreadStart handleNetworking = delegate()
             {
-                this.Connect();
-
-                if (tcpClient == null || netStream == null || !tcpClient.Connected || !netStream.CanRead)
+                while (true)
                 {
-                    this.Disconnect();
-                    this.Connect();
-                }
+                    if (tcpClient == null || netStream == null || !tcpClient.Connected || !netStream.CanRead)
+                    {
+                        try
+                        {
+                            this.Disconnect();
+                            this.Connect();
+                        }
+                        catch
+                        {
+                        }
 
-                byte[] netReadBuff = new byte[1024];
-                StreamReader sr = new StreamReader(netStream);
-                
-                String lineFromServer;
-                while ((lineFromServer = sr.ReadLine()) != null)
-                {
-                    NotifyUI(lineFromServer);
+                        Thread.Sleep(300);
+                        continue;
+                    }
+
+                    byte[] netReadBuff = new byte[1024];
+                    StreamReader sr = new StreamReader(netStream);
+
+                    String lineFromServer;
+                    while ((lineFromServer = sr.ReadLine()) != null)
+                    {
+                        Console.WriteLine("<- {0}", lineFromServer);
+                        NotifyUI(lineFromServer);
+                    }
+
+                    Thread.Sleep(300);
                 }
             };
             myThread = new Thread(handleNetworking);
@@ -73,6 +86,8 @@ namespace NetJungleTimer
 
         private void Disconnect()
         {
+            NotifyUI("!DISCONNECT");
+
             if (netStream != null)
                 netStream.Close();
             if (tcpClient != null)
