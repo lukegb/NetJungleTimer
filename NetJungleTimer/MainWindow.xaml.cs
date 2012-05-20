@@ -33,7 +33,6 @@ namespace NetJungleTimer
         DispatcherTimer uiTimer;
         DispatcherTimer processingTimer;
         DispatcherTimer netTimer;
-        DispatcherTimer kbdTimer;
 
         // our blue, our red, their blue, their red, dragon, baron
         // buffs: 5 mins
@@ -89,15 +88,15 @@ namespace NetJungleTimer
 
             // let's go
             jungleTimers = new JungleTimer[6];
-            jungleTimers[0] = new JungleTimer(this, ourBlueImg, BUFF_TIME, "OUR_BLUE", Key.NumPad7);
-            jungleTimers[1] = new JungleTimer(this, ourRedImg, BUFF_TIME, "OUR_RED", Key.NumPad4);
-            jungleTimers[2] = new JungleTimer(this, theirBlueImg, BUFF_TIME, "THEIR_BLUE", Key.NumPad9);
-            jungleTimers[3] = new JungleTimer(this, theirRedImg, BUFF_TIME, "THEIR_RED", Key.NumPad6);
-            jungleTimers[4] = new JungleTimer(this, dragonImg, DRAGON_TIME, "DRAGON", Key.NumPad5);
-            jungleTimers[5] = new JungleTimer(this, baronImg, BARON_TIME, "BARON", Key.NumPad8);
+            jungleTimers[0] = new JungleTimer(this, ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7));
+            jungleTimers[1] = new JungleTimer(this, ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4));
+            jungleTimers[2] = new JungleTimer(this, theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9));
+            jungleTimers[3] = new JungleTimer(this, theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6));
+            jungleTimers[4] = new JungleTimer(this, dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5));
+            jungleTimers[5] = new JungleTimer(this, baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8));
 
             // now for our quit hotkey...
-            keyboardManager.ListenToKey(Key.NumLock);
+            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock));
         }
 
         protected void Connect()
@@ -158,11 +157,6 @@ namespace NetJungleTimer
             netTimer.Interval = TimeSpan.FromMilliseconds(NET_TIMER_TICK);
             netTimer.Tick += new EventHandler(netTimer_Tick);
             netTimer.Start();
-
-            kbdTimer = new DispatcherTimer();
-            kbdTimer.Interval = TimeSpan.FromMilliseconds(KEYBOARD_TIMER_TICK);
-            kbdTimer.Tick += new EventHandler(kbdTimer_Tick);
-            kbdTimer.Start();
         }
 
         private void netTimer_Tick(object sender, EventArgs e)
@@ -193,11 +187,6 @@ namespace NetJungleTimer
             {
                 jt.UpdateComponent();
             }
-        }
-
-        private void kbdTimer_Tick(object sender, EventArgs e)
-        {
-            keyboardManager.Update();
         }
 
         private void processingTimer_Tick(object sender, EventArgs e)
@@ -250,15 +239,15 @@ namespace NetJungleTimer
                 uint lolWindowStyle = WindowsApi.GetWindowStyle(leagueOfLegendsWindowHndl);
                 if (lolWindowStyle == 0) // if it doesn't seem to exist
                 {
-                    self.ResetState();
+                    this.ResetState();
                 }
             }
             
         }
 
-        public void OnHotKeyHandler(Key key)
+        public void OnHotKeyHandler(KeyboardManager.KMKey key)
         {
-            if (key == Key.NumLock)
+            if (key.Key == Key.NumLock)
             {
 
                 System.Environment.Exit(0);

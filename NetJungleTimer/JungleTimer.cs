@@ -22,14 +22,14 @@ namespace NetJungleTimer
         Brush bgBrush;
         bool triggeredAtThirty = false;
         String netMessage;
-        Key myHotkey;
+        KeyboardManager.KMKey myHotkey;
         bool flashingAndIsRed = false;
 
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
         private Color THIRTY_SECONDS_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aaff0000"));
 
 
-        public JungleTimer(MainWindow parent, Image timerImg, int countdown, String netMessage, Key myHotkey)
+        public JungleTimer(MainWindow parent, Image timerImg, int countdown, String netMessage, KeyboardManager.KMKey myHotkey)
         {
             this.parent = parent;
             this.netMessage = netMessage;
@@ -162,9 +162,9 @@ namespace NetJungleTimer
             }
         }
 
-        internal void GotKey(Key hotKey)
+        internal void GotKey(KeyboardManager.KMKey hotKey)
         {
-            if (hotKey.Equals(myHotkey))
+            if (hotKey.Key.Equals(myHotkey))
             {
                 // yay
                 parent.NetBroadcast("JUNGLETIMER " + netMessage + " " + countdown.ToString());
