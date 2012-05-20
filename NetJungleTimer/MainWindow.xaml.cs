@@ -95,7 +95,7 @@ namespace NetJungleTimer
             jungleTimers[5] = new JungleTimer(this, baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8));
 
             // now for our quit hotkey...
-            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock));
+            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock, true, true, false));
 
             keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.F9, true, true, false));
         }
