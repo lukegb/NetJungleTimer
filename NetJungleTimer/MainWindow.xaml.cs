@@ -23,7 +23,7 @@ namespace NetJungleTimer
     public partial class MainWindow : Window
     {
         const int UI_TIMER_TICK = 500;
-        const int PROCESSING_TIMER_TICK = 500;
+        const int PROCESSING_TIMER_TICK = 250;
         const int NET_TIMER_TICK = 500;
         const int KEYBOARD_TIMER_TICK = 20;
 
@@ -32,7 +32,6 @@ namespace NetJungleTimer
 
         DispatcherTimer uiTimer;
         DispatcherTimer processingTimer;
-        DispatcherTimer netTimer;
 
         // our blue, our red, their blue, their red, dragon, baron
         // buffs: 5 mins
@@ -67,7 +66,7 @@ namespace NetJungleTimer
 
         public MainWindow()
         {
-            netJungleProto = new NetProto(REMOTE_SERVER, REMOTE_PORT);
+            netJungleProto = new NetProto(this, REMOTE_SERVER, REMOTE_PORT);
 
             InitializeComponent();
 
@@ -97,23 +96,8 @@ namespace NetJungleTimer
 
             // now for our quit hotkey...
             keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock));
-        }
 
-        protected void Connect()
-        {
-            if (netJungleProto.Connected)
-                netJungleProto.Disconnect();
-
-            connectionStatusText.Content = "Connecting...";
-            try
-            {
-                netJungleProto.Connect();
-                connectionStatusText.Content = "Connected.";
-            }
-            catch (Exception err)
-            {
-                connectionStatusText.Content = "FAILED: " + err.Message;
-            }
+            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.F9, true, true, false));
         }
 
         protected override void OnActivated(EventArgs e)
@@ -153,31 +137,19 @@ namespace NetJungleTimer
             processingTimer.Tick += new EventHandler(processingTimer_Tick);
             processingTimer.Start();
 
-            netTimer = new DispatcherTimer();
-            netTimer.Interval = TimeSpan.FromMilliseconds(NET_TIMER_TICK);
-            netTimer.Tick += new EventHandler(netTimer_Tick);
-            netTimer.Start();
+            netJungleProto.Go();
         }
 
-        private void netTimer_Tick(object sender, EventArgs e)
+        public void OnNetworkMessage(String message)
         {
-            String retData = netJungleProto.ReadData();
-            if (retData == "RECONNECT")
-            {
-                Connect();
-            }
-            else if (retData != null)
-            {
-                connectionStatusText.Content = String.Format("Received: {0}", retData);
+            connectionStatusText.Content = String.Format("Received: {0}", message);
 
-                if (retData.StartsWith("JUNGLETIMER "))
+            if (message.StartsWith("JUNGLETIMER "))
+            {
+                foreach (JungleTimer jt in jungleTimers)
                 {
-                    foreach (JungleTimer jt in jungleTimers)
-                    {
-                        jt.GotMessage(retData);
-                    }
+                    jt.GotMessage(message);
                 }
-
             }
         }
 
@@ -247,10 +219,18 @@ namespace NetJungleTimer
 
         public void OnHotKeyHandler(KeyboardManager.KMKey key)
         {
+            Console.WriteLine(key);
             if (key.Key == Key.NumLock)
             {
-
                 System.Environment.Exit(0);
+            }
+            else if (key.Equals(new KeyboardManager.KMKey(Key.F9, true, true, false)))
+            {
+                if (leagueOfLegendsWindowHndl != IntPtr.Zero) // if we've already FOUND the LoL window...
+                {
+                    Console.WriteLine("HEY!");
+                    WindowsApi.MoveWindowToSensibleLocation(leagueOfLegendsWindowHndl);
+                }
             }
 
             foreach (JungleTimer jt in jungleTimers)

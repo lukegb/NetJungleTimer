@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
+using System.Windows.Threading;
 
 namespace NetJungleTimer
 {
@@ -13,18 +16,54 @@ namespace NetJungleTimer
 
         TcpClient tcpClient;
         NetworkStream netStream;
+        MainWindow parent;
 
-        String dangling = "";
+        Thread myThread;
 
         public bool Connected { get { if (tcpClient == null) return false; return tcpClient.Connected; } }
 
-        public NetProto(String host, int port)
+        public NetProto(MainWindow parent, String host, int port)
         {
+            this.parent = parent;
+
             this.host = host;
             this.port = port;
         }
 
-        public void Connect()
+        public void Go()
+        {
+            ThreadStart handleNetworking = delegate()
+            {
+                this.Connect();
+
+                if (tcpClient == null || netStream == null || !tcpClient.Connected || !netStream.CanRead)
+                {
+                    this.Disconnect();
+                    this.Connect();
+                }
+
+                byte[] netReadBuff = new byte[1024];
+                StreamReader sr = new StreamReader(netStream);
+                
+                String lineFromServer;
+                while ((lineFromServer = sr.ReadLine()) != null)
+                {
+                    NotifyUI(lineFromServer);
+                }
+            };
+            myThread = new Thread(handleNetworking);
+            myThread.Start();
+        }
+
+        private void NotifyUI(String what)
+        {
+            parent.Dispatcher.Invoke(DispatcherPriority.Normal,
+                new Action<String>(parent.OnNetworkMessage),
+                what);
+        }
+
+
+        private void Connect()
         {
             tcpClient = new TcpClient(this.host, this.port);
             netStream = tcpClient.GetStream();
@@ -32,7 +71,7 @@ namespace NetJungleTimer
             netStream.Write(System.Text.Encoding.ASCII.GetBytes("CONN\n"), 0, 5);
         }
 
-        public void Disconnect()
+        private void Disconnect()
         {
             if (netStream != null)
                 netStream.Close();
@@ -42,36 +81,10 @@ namespace NetJungleTimer
             tcpClient = null;
         }
 
-        public String ReadData()
-        {
-            if (tcpClient == null || netStream == null || !tcpClient.Connected || !netStream.CanRead)
-                return "RECONNECT";
-
-            if (!netStream.DataAvailable)
-                return null;
-
-            byte[] netReadBuff = new byte[1024];
-            StringBuilder netReadBuffSb = new StringBuilder(dangling);
-            dangling = "";
-            int numBytes = 0;
-
-            do
-            {
-                numBytes = netStream.Read(netReadBuff, 0, netReadBuff.Length);
-                netReadBuffSb.AppendFormat("{0}", Encoding.ASCII.GetString(netReadBuff, 0, numBytes));
-            }
-            while (netStream.DataAvailable);
-
-            String[] outs = netReadBuffSb.ToString().Split(new char[] {'\n'}, 2);
-
-            if (outs.Length == 2)
-                dangling = outs[1];
-
-            return outs[0];
-        }
-
         internal void SendMessage(string what)
         {
+            Console.Write(what);
+
             if (tcpClient == null || netStream == null || !tcpClient.Connected || !netStream.CanWrite)
             {
                 Disconnect();

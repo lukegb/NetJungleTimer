@@ -92,6 +92,9 @@ namespace NetJungleTimer
             [DllImport("user32.dll", SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             public static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+            [DllImport("user32.dll", SetLastError = true)]
+            internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
         }
 
         internal class WindowStyle
@@ -156,6 +159,12 @@ namespace NetJungleTimer
         internal static uint GetWindowStyle(IntPtr tempHandle)
         {
             return (uint)User32.GetWindowLong(tempHandle, WindowStyle.GWL_STYLE); // grab the style
+        }
+
+        internal static void MoveWindowToSensibleLocation(IntPtr leagueOfLegendsWindowHndl)
+        {
+            Rect windowDims = GetWindowDims(leagueOfLegendsWindowHndl);
+            User32.MoveWindow(leagueOfLegendsWindowHndl, 0, 0, (int)windowDims.Width, (int)windowDims.Height, true);
         }
     }
 }

@@ -92,10 +92,10 @@ namespace NetJungleTimer
             public bool Equals(KMKey other)
             {
                 return (
-                    other.Key == this.Key &&
+                    other.Key.Equals(Key) &&
                     other.CtrlDown == this.CtrlDown &&
                     other.AltDown == this.AltDown &&
-                    other.ShiftDown == this.CtrlDown
+                    other.ShiftDown == this.ShiftDown
                     ) ;
             }
 
@@ -138,6 +138,8 @@ namespace NetJungleTimer
         List<KMKey> keysPressed = new List<KMKey>();
         List<KMKey> runningKeys = new List<KMKey>();
 
+        IntPtr kbdHook;
+
         private WindowsApi.User32.HookProc keyPressDelegate = null;
 
         public KeyboardManager(MainWindow parent)
@@ -146,7 +148,12 @@ namespace NetJungleTimer
 
             this.keyPressDelegate = new WindowsApi.User32.HookProc(this.keyboardCallback);
 
-            WindowsApi.User32.SetWindowsHookEx(WindowsApi.User32.HookType.WH_KEYBOARD_LL, this.keyPressDelegate, IntPtr.Zero, 0);
+            kbdHook = WindowsApi.User32.SetWindowsHookEx(WindowsApi.User32.HookType.WH_KEYBOARD_LL, this.keyPressDelegate, IntPtr.Zero, 0);
+        }
+
+        ~KeyboardManager()
+        {
+            WindowsApi.User32.UnhookWindowsHookEx(this.kbdHook);
         }
 
         private int keyboardCallback(int code, IntPtr wParam, [In] WindowsApi.User32.KBDLLHOOKSTRUCT lParam)
@@ -227,13 +234,14 @@ namespace NetJungleTimer
                 ResetControlKeys();
                 KMKey akmk = new KMKey(whatKey, ctrlDown, altDown, shiftDown);
                 keysPressed.Add(akmk);
-                
-                Console.WriteLine("KEYDOWN: {0} (ctrl: {1}, alt: {2}, shift: {3})", whatKey, ctrlDown, altDown, shiftDown);
-                Console.WriteLine(runningKeys.Contains(akmk));
+
+#if false
                 foreach (KMKey kmk in runningKeys)
                 {
-                    Console.WriteLine(kmk);
+                    Console.WriteLine("{1} - {0}", kmk, kmk.Equals(akmk));
                 }
+#endif
+                
                 if (runningKeys.Contains(akmk))
                 {
                     parent.OnHotKeyHandler(akmk);
