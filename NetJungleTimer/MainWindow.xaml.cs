@@ -38,11 +38,13 @@ namespace NetJungleTimer
         const int BUFF_TIME = 5 * 60;
         const int DRAGON_TIME = 6 * 60;
         const int BARON_TIME = 7 * 60;
+        const int WARD_TIME = 3 * 60;
+        const int INHIBITOR_TIME = 5 * 60;
 
         IntPtr leagueOfLegendsWindowHndl;
 
         NetProto netJungleProto;
-        JungleTimer[] jungleTimers;
+        NetworkedTimer[] networkedTimers;
         public KeyboardManager keyboardManager;
 
         WelcomeWindow welWin;
@@ -81,13 +83,13 @@ namespace NetJungleTimer
             keyboardManager = new KeyboardManager(this);
 
             // let's go
-            jungleTimers = new JungleTimer[6];
-            jungleTimers[0] = new JungleTimer(this, ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7));
-            jungleTimers[1] = new JungleTimer(this, ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4));
-            jungleTimers[2] = new JungleTimer(this, theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9));
-            jungleTimers[3] = new JungleTimer(this, theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6));
-            jungleTimers[4] = new JungleTimer(this, dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5));
-            jungleTimers[5] = new JungleTimer(this, baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8));
+            networkedTimers = new NetworkedTimer[6];
+            networkedTimers[0] = new NetworkedTimer(this, ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7));
+            networkedTimers[1] = new NetworkedTimer(this, ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4));
+            networkedTimers[2] = new NetworkedTimer(this, theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9));
+            networkedTimers[3] = new NetworkedTimer(this, theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6));
+            networkedTimers[4] = new NetworkedTimer(this, dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5));
+            networkedTimers[5] = new NetworkedTimer(this, baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8));
 
             // now for our quit hotkey...
             keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock, true, true, false));
@@ -122,11 +124,11 @@ namespace NetJungleTimer
 
         public void OnNetworkMessage(String message)
         {
-            if (message.StartsWith("JUNGLETIMER "))
+            if (message.StartsWith("NETTIMER "))
             {
-                foreach (JungleTimer jt in jungleTimers)
+                foreach (NetworkedTimer netTimer in networkedTimers)
                 {
-                    jt.GotMessage(message);
+                    netTimer.GotMessage(message);
                 }
             }
             else if (message.StartsWith("!DISCONNECT"))
@@ -159,7 +161,7 @@ namespace NetJungleTimer
 
             masterLastResyncedData = DateTime.Now;
 
-            foreach (JungleTimer jt in jungleTimers)
+            foreach (NetworkedTimer jt in networkedTimers)
             {
                 jt.SyncData();
             }
@@ -167,7 +169,7 @@ namespace NetJungleTimer
 
         private void uiTimer_Tick(object sender, EventArgs e)
         {
-            foreach (JungleTimer jt in jungleTimers)
+            foreach (NetworkedTimer jt in networkedTimers)
             {
                 jt.UpdateComponent();
             }
@@ -255,7 +257,7 @@ namespace NetJungleTimer
 
             bool suppress = false;
 
-            foreach (JungleTimer jt in jungleTimers)
+            foreach (NetworkedTimer jt in networkedTimers)
             {
                 if (jt.GotKey(key))
                     suppress = true;

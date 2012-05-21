@@ -10,7 +10,7 @@ using System.Windows.Media.Animation;
 
 namespace NetJungleTimer
 {
-    class JungleTimer
+    class NetworkedTimer
     {
         MainWindow parent;
         Image timerImg;
@@ -29,7 +29,7 @@ namespace NetJungleTimer
         private Color THIRTY_SECONDS_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aaff0000"));
 
 
-        public JungleTimer(MainWindow parent, Image timerImg, int countdown, String netMessage, KeyboardManager.KMKey myHotkey)
+        public NetworkedTimer(MainWindow parent, Image timerImg, int countdown, String netMessage, KeyboardManager.KMKey myHotkey)
         {
             this.parent = parent;
             this.netMessage = netMessage;
@@ -167,7 +167,7 @@ namespace NetJungleTimer
             if (hotKey.Equals(myHotkey))
             {
                 // yay
-                parent.NetBroadcast("JUNGLETIMER " + netMessage + " " + countdown.ToString());
+                parent.NetBroadcast("NETTIMER " + netMessage + " " + countdown.ToString());
                 StartCountdown(countdown);
                 return true;
             }
@@ -176,7 +176,7 @@ namespace NetJungleTimer
 
         internal void SyncData()
         {
-            parent.NetBroadcast("JUNGLETIMER " + netMessage + " " + Math.Min(countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
+            parent.NetBroadcast("NETTIMER " + netMessage + " " + Math.Min(countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
         }
     }
 }
