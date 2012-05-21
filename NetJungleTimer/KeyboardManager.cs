@@ -433,7 +433,7 @@ namespace NetJungleTimer
             WindowsApi.User32.SendInput((uint)preInputSet.Count, preInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
             WindowsApi.User32.SendInput((uint)inputSet.Count, inputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
             WindowsApi.User32.SendInput((uint)postInputSet.Count, postInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
-
+            
         }
 
     }

@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Deployment.Application;
 
 namespace NetJungleTimer
 {
@@ -41,7 +42,61 @@ namespace NetJungleTimer
 
             InitializeComponent();
 
+            if (ApplicationDeployment.IsNetworkDeployed)
+            {
+                Version currentVersion = ApplicationDeployment.CurrentDeployment.CurrentVersion;
+                versionLabel.Content = String.Format("v{0}", currentVersion.ToString());
+
+                SetFormFieldsEnabled(false);
+                SetStatusLabel("Checking for updates...");
+
+                ForceCheckForUpdate();
+            }
+            else
+            {
+                versionLabel.Content = "<<DEVELOPMENT BUILD>>";
+            }
+
             LoadLastConnectedSettings();
+        }
+
+        private void ForceCheckForUpdate()
+        {
+            ApplicationDeployment.CurrentDeployment.CheckForUpdateCompleted += new System.Deployment.Application.CheckForUpdateCompletedEventHandler(CheckForUpdateCompleted);
+            ApplicationDeployment.CurrentDeployment.CheckForUpdateAsync();
+        }
+
+        private void CheckForUpdateCompleted(object sender, CheckForUpdateCompletedEventArgs e)
+        {
+            if (e.UpdateAvailable)
+            {
+                MessageBox.Show("An update is available and is now being downloaded.");
+                BeginUpdate();
+            }
+            else
+            {
+                SetStatusLabel("Ready.");
+                SetFormFieldsEnabled(true);
+            }
+        }
+
+        private void BeginUpdate()
+        {
+            ApplicationDeployment ad = ApplicationDeployment.CurrentDeployment;
+            ad.UpdateCompleted += new System.ComponentModel.AsyncCompletedEventHandler(UpdateCompleted);
+            ad.UpdateProgressChanged += new DeploymentProgressChangedEventHandler(UpdateProgressChanged);
+            ad.UpdateAsync();
+        }
+
+        private void UpdateCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            MessageBox.Show("Update complete.");
+            Application.Current.Shutdown(0);
+        }
+
+        private void UpdateProgressChanged(object sender, DeploymentProgressChangedEventArgs e)
+        {
+            SetStatusLabel(String.Format("Updating... {0:D}%", e.ProgressPercentage));
         }
 
         private void SetFormFieldsEnabled(bool GloballyEnabled)

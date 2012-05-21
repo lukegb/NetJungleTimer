@@ -66,7 +66,6 @@ namespace NetJungleTimer
             this.netJungleProto = netJungleProto;
 
             ResetState();
-
         }
 
         ~MainWindow()
@@ -97,6 +96,8 @@ namespace NetJungleTimer
 
         protected void ResetState()
         {
+            keyboardManager = null;
+            networkedTimers = null;
 
             keyboardManager = new KeyboardManager(this);
 
@@ -187,6 +188,9 @@ namespace NetJungleTimer
 
         private void uiTimer_Tick(object sender, EventArgs e)
         {
+            if (this.Visibility != Visibility.Visible)
+                return;
+
             DateTime now = DateTime.Now;
             foreach (NetworkedTimer jt in networkedTimers)
             {
@@ -264,7 +268,7 @@ namespace NetJungleTimer
 
         public bool OnHotKeyHandler(KeyboardManager.KMKey key)
         {
-            if (key.Key == Key.NumLock)
+            if (key.Equals(new KeyboardManager.KMKey(Key.NumLock, true, true, false)))
             {
                 propagateExit = true;
                 return true;
@@ -274,8 +278,12 @@ namespace NetJungleTimer
                 if (leagueOfLegendsWindowHndl != IntPtr.Zero) // if we've already FOUND the LoL window...
                 {
                     WindowsApi.MoveWindowToSensibleLocation(leagueOfLegendsWindowHndl);
+                    return false;
                 }
             }
+
+            if (this.Visibility != Visibility.Visible)
+                return false;
 
             bool suppress = false;
 
@@ -314,7 +322,6 @@ namespace NetJungleTimer
 
         internal void OnTimerFinalCountdown(NetworkedTimer thisTimer, int finalLength)
         {
-
             if (this.UseSpeechSynth)
                 synth.SpeakAsync(String.Format("{0} will be up in {1} seconds.", thisTimer.context.ChatMessageComplete, finalLength));
         }

@@ -74,6 +74,14 @@ namespace NetJungleTimer
             Grid.SetColumn(timerLabel, Grid.GetColumn(context.TimerBackgroundImage));
         }
 
+        ~NetworkedTimer()
+        {
+            ((Grid)(timerLabel.Parent)).Children.Remove(timerLabel);
+            timerLabel = null;
+
+            this.parent = null;
+        }
+
         public void StartCountdown(int time)
         {
             beganCountdown = DateTime.Now;
@@ -109,10 +117,11 @@ namespace NetJungleTimer
 
         public void EndCountdown()
         {
+            if (spinning)
+                parent.OnTimerExpiry(this);
+
             spinning = false;
             timerLabel.Visibility = System.Windows.Visibility.Hidden;
-
-            parent.OnTimerExpiry(this);
         }
 
         public void UpdateComponent(DateTime now)
