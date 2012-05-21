@@ -13,6 +13,7 @@ namespace NetJungleTimer
     {
         String host;
         int port;
+        String username;
         String roomName;
 
         TcpClient tcpClient;
@@ -29,28 +30,18 @@ namespace NetJungleTimer
 
         bool pingResponded = true;
 
-        private bool _isMaster;
-        public bool isMaster
-        {
-            get
-            {
-                return this._isMaster;
-            }
-            private set
-            {
-                this._isMaster = value;
-            }
-        }
+        public bool IsMaster { get; private set; }
 
 
         public bool Connected { get { if (tcpClient == null) return false; return tcpClient.Connected; } }
 
-        public NetProto(NetProtoUI parent, String host, int port, String roomName)
+        public NetProto(NetProtoUI parent, String host, int port, String username, String roomName)
         {
             this.parent = parent;
 
             this.host = host;
             this.port = port;
+            this.username = username;
             this.roomName = roomName;
         }
 
@@ -93,11 +84,11 @@ namespace NetJungleTimer
                             }
                             else if (lineFromServer.StartsWith("&NOTMASTER"))
                             {
-                                isMaster = false;
+                                IsMaster = false;
                             }
                             else if (lineFromServer.StartsWith("&NEWMASTER"))
                             {
-                                isMaster = true;
+                                IsMaster = true;
                             }
                             Console.WriteLine("<- {0}", lineFromServer);
                             NotifyUI(lineFromServer);
@@ -199,10 +190,12 @@ namespace NetJungleTimer
 
             netStream.Write(System.Text.Encoding.ASCII.GetBytes("CONN\n"), 0, 5);
 
-            String joinStr = String.Format("JOIN {0}\n", this.roomName);
+            String joinStr = String.Format("LOGIN {0} {1}\n", this.username, "-");
             byte[] joinBytes = System.Text.Encoding.ASCII.GetBytes(joinStr);
+            netStream.Write(joinBytes, 0, joinBytes.Length);
 
-            netStream.Write(System.Text.Encoding.ASCII.GetBytes("CONN\n"), 0, 5);
+            joinStr = String.Format("JOIN {0}\n", this.roomName);
+            joinBytes = System.Text.Encoding.ASCII.GetBytes(joinStr);
             netStream.Write(joinBytes, 0, joinBytes.Length);
 
             this.reconnectAttempt = 0;

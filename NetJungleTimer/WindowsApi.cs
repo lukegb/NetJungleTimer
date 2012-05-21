@@ -1068,6 +1068,9 @@ namespace NetJungleTimer
 
             [DllImport("user32.dll")]
             internal static extern IntPtr GetMessageExtraInfo();
+
+            [DllImport("user32.dll")]
+            internal static extern short VkKeyScan(char ch);
         }
 
         internal class WindowStyle
@@ -1089,6 +1092,24 @@ namespace NetJungleTimer
             public int bottom;
         }
 
+        [StructLayout(LayoutKind.Explicit)]
+        struct Helper
+        {
+            [FieldOffset(0)]
+            public short Value;
+            [FieldOffset(0)]
+            public byte Low;
+            [FieldOffset(1)]
+            public byte High;
+        }
+
+        public struct KeyHelper
+        {
+            public byte KeyCode;
+            public bool ShiftPressed;
+            public bool CtrlPressed;
+            public bool AltPressed;
+        }
 
         // my stuff!
         public static void SetWindowNoActivate(IntPtr window)
@@ -1114,7 +1135,6 @@ namespace NetJungleTimer
             returnRect.Width = winLoc.right - winLoc.left;
             returnRect.Height = winLoc.bottom - winLoc.top;
             return returnRect;
-            
         }
 
         internal static IntPtr GetForegroundWindowHandle()
@@ -1137,7 +1157,24 @@ namespace NetJungleTimer
         internal static void MoveWindowToSensibleLocation(IntPtr leagueOfLegendsWindowHndl)
         {
             Rect windowDims = GetWindowDims(leagueOfLegendsWindowHndl);
-            User32.MoveWindow(leagueOfLegendsWindowHndl, 0, 0, (int)windowDims.Width, (int)windowDims.Height, true);
+
+            int newPosX = (int)((System.Windows.SystemParameters.FullPrimaryScreenWidth / 2) - (windowDims.Width / 2));
+            int newPosY = (int)((System.Windows.SystemParameters.FullPrimaryScreenHeight / 2) - (windowDims.Height / 2));
+
+            User32.MoveWindow(leagueOfLegendsWindowHndl, newPosX, newPosY, (int)windowDims.Width, (int)windowDims.Height, true);
+        }
+
+        internal static KeyHelper GetVirtualKey(char datChar)
+        {
+            var helper = new Helper { Value = User32.VkKeyScan(datChar) };
+
+            var ret = new KeyHelper();
+            ret.KeyCode = helper.Low;
+            ret.ShiftPressed = (helper.High & 1) != 0;
+            ret.CtrlPressed = (helper.High & 2) != 0;
+            ret.AltPressed = (helper.High & 4) != 0;
+
+            return ret;
         }
     }
 }

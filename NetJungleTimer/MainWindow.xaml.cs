@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Speech.Synthesis;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -22,13 +23,10 @@ namespace NetJungleTimer
     /// </summary>
     public partial class MainWindow : Window, NetProtoUI
     {
-        const int UI_TIMER_TICK = 500;
+        const int UI_TIMER_TICK = 100;
         const int PROCESSING_TIMER_TICK = 250;
         const int NET_TIMER_TICK = 500;
         const int KEYBOARD_TIMER_TICK = 20;
-
-        DispatcherTimer uiTimer;
-        DispatcherTimer processingTimer;
 
         // our blue, our red, their blue, their red, dragon, baron
         // buffs: 5 mins
@@ -40,6 +38,9 @@ namespace NetJungleTimer
         const int BARON_TIME = 7 * 60;
         const int WARD_TIME = 3 * 60;
         const int INHIBITOR_TIME = 5 * 60;
+
+        DispatcherTimer uiTimer;
+        DispatcherTimer processingTimer;
 
         IntPtr leagueOfLegendsWindowHndl;
 
@@ -53,6 +54,8 @@ namespace NetJungleTimer
 
         DateTime masterLastResyncedData;
 
+        SpeechSynthesizer synth = new SpeechSynthesizer();
+
         public MainWindow(Mutex mut, WelcomeWindow welWin, NetProto netJungleProto)
         {
             this.m = mut;
@@ -63,16 +66,31 @@ namespace NetJungleTimer
             this.netJungleProto = netJungleProto;
 
             ResetState();
-            
+
+        }
+
+        ~MainWindow()
+        {
+            GoAway();
         }
 
         public void GoAway()
         {
-            uiTimer.Stop();
-            processingTimer.Stop();
-            netJungleProto = null;
+            if (uiTimer != null)
+                uiTimer.Stop();
             uiTimer = null;
+
+            if (processingTimer != null)
+                processingTimer.Stop();
             processingTimer = null;
+
+            if (synth != null)
+                synth.Dispose();
+            synth = null;
+
+            networkedTimers = null; // bye ;D
+
+            netJungleProto = null;
             welWin = null;
             keyboardManager = null;
         }
@@ -84,12 +102,12 @@ namespace NetJungleTimer
 
             // let's go
             networkedTimers = new NetworkedTimer[6];
-            networkedTimers[0] = new NetworkedTimer(this, ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7));
-            networkedTimers[1] = new NetworkedTimer(this, ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4));
-            networkedTimers[2] = new NetworkedTimer(this, theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9));
-            networkedTimers[3] = new NetworkedTimer(this, theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6));
-            networkedTimers[4] = new NetworkedTimer(this, dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5));
-            networkedTimers[5] = new NetworkedTimer(this, baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8));
+            networkedTimers[0] = new NetworkedTimer(this, new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"));
+            networkedTimers[1] = new NetworkedTimer(this, new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"));
+            networkedTimers[2] = new NetworkedTimer(this, new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"));
+            networkedTimers[3] = new NetworkedTimer(this, new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"));
+            networkedTimers[4] = new NetworkedTimer(this, new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"));
+            networkedTimers[5] = new NetworkedTimer(this, new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"));
 
             // now for our quit hotkey...
             keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock, true, true, false));
@@ -140,14 +158,14 @@ namespace NetJungleTimer
                 String[] messageSplit = message.Split(new[] { ' ' });
                 connectionStatusText.Content = String.Format("Connect attempt #{0}", messageSplit[1]);
             }
-            else if (message.StartsWith("CONN") && netJungleProto.isMaster)
+            else if (message.StartsWith("CONN") && netJungleProto.IsMaster)
             {
                 SyncData();
             }
 
             if (!message.StartsWith("!")) // internal message
             {
-                if (netJungleProto.isMaster)
+                if (netJungleProto.IsMaster)
                     connectionStatusText.Content = "Connected [MASTER]";
                 else
                     connectionStatusText.Content = "Connected";
@@ -156,7 +174,7 @@ namespace NetJungleTimer
 
         private void SyncData()
         {
-            if (!netJungleProto.isMaster)
+            if (!netJungleProto.IsMaster)
                 return;
 
             masterLastResyncedData = DateTime.Now;
@@ -169,9 +187,10 @@ namespace NetJungleTimer
 
         private void uiTimer_Tick(object sender, EventArgs e)
         {
+            DateTime now = DateTime.Now;
             foreach (NetworkedTimer jt in networkedTimers)
             {
-                jt.UpdateComponent();
+                jt.UpdateComponent(now);
             }
         }
 
@@ -194,27 +213,30 @@ namespace NetJungleTimer
             if (windowCaption.ToLower().Contains("league of legends (tm) client"))
             {
                 keyboardManager.EnsureNumLockEnabled();
-                this.Visibility = Visibility.Visible;
                 DateTime start = DateTime.Now;
 
                 // let's go move ourselves to the right place
                 Rect leagueOfLegendsWindowDimensions = WindowsApi.GetWindowDims(tempHandle);
-                int topMod = 0;
-                int leftMod = 0;
-                int botMod = 0;
-                int rightMod = 0;
-                if ((windowStyle & (WindowsApi.WindowStyle.WS_EX_LAYERED)) == WindowsApi.WindowStyle.WS_EX_LAYERED)
+
+                if (leagueOfLegendsWindowDimensions.Width > 1000) // have we got actual dimensions yet?
                 {
-                    botMod = leftMod = rightMod = (System.Windows.Forms.SystemInformation.FrameBorderSize.Width / 2);
-                    topMod = System.Windows.Forms.SystemInformation.CaptionHeight + leftMod;
+                    int topMod = 0;
+                    int leftMod = 0;
+                    int botMod = 0;
+                    int rightMod = 0;
+                    if ((windowStyle & (WindowsApi.WindowStyle.WS_EX_LAYERED)) == WindowsApi.WindowStyle.WS_EX_LAYERED)
+                    {
+                        botMod = leftMod = rightMod = (System.Windows.Forms.SystemInformation.FrameBorderSize.Width / 2);
+                        topMod = System.Windows.Forms.SystemInformation.CaptionHeight + leftMod;
+                    }
+                    this.Left = leagueOfLegendsWindowDimensions.Left + leftMod;
+                    this.Top = leagueOfLegendsWindowDimensions.Top + topMod;
+                    this.Width = leagueOfLegendsWindowDimensions.Width - leftMod - rightMod;
+                    this.Height = leagueOfLegendsWindowDimensions.Height - topMod - botMod;
+                    this.Visibility = Visibility.Visible;
+
+                    leagueOfLegendsWindowHndl = tempHandle; // we found it <3
                 }
-
-                this.Left = leagueOfLegendsWindowDimensions.Left + leftMod;
-                this.Top = leagueOfLegendsWindowDimensions.Top + topMod;
-                this.Width = leagueOfLegendsWindowDimensions.Width - leftMod - rightMod;
-                this.Height = leagueOfLegendsWindowDimensions.Height - topMod - botMod;
-
-                leagueOfLegendsWindowHndl = tempHandle; // we found it <3
             }
             else
             {
@@ -233,11 +255,11 @@ namespace NetJungleTimer
                 }
             }
 
-            if (netJungleProto.isMaster && masterLastResyncedData.Add(new TimeSpan(0, 0, 20)) < DateTime.Now)
+            if (netJungleProto.IsMaster && masterLastResyncedData.Add(new TimeSpan(0, 0, 20)) < DateTime.Now)
             {
                 this.SyncData();
             }
-            
+
         }
 
         public bool OnHotKeyHandler(KeyboardManager.KMKey key)
@@ -279,5 +301,24 @@ namespace NetJungleTimer
         {
             return this.Dispatcher;
         }
+
+        internal void OnTimerExpiry(NetworkedTimer thisTimer)
+        {
+            /*if (netJungleProto.IsMaster)
+            {
+                keyboardManager.SendAlliedChatMessage(thisTimer.context.ChatMessageComplete);
+            }*/
+            if (this.UseSpeechSynth)
+                synth.SpeakAsync(String.Format("{0}'s up.", thisTimer.context.ChatMessageComplete));
+        }
+
+        internal void OnTimerFinalCountdown(NetworkedTimer thisTimer, int finalLength)
+        {
+
+            if (this.UseSpeechSynth)
+                synth.SpeakAsync(String.Format("{0} will be up in {1} seconds.", thisTimer.context.ChatMessageComplete, finalLength));
+        }
+
+        public bool UseSpeechSynth { get; set; }
     }
 }
