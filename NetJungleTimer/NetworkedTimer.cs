@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace NetJungleTimer
 {
@@ -76,10 +77,17 @@ namespace NetJungleTimer
 
         ~NetworkedTimer()
         {
-            ((Grid)(timerLabel.Parent)).Children.Remove(timerLabel);
+            this.parent.GetDispatcher().Invoke(DispatcherPriority.Normal,
+                new Action<Label>(this.RemoveCreatedLabel),
+                timerLabel);
             timerLabel = null;
 
             this.parent = null;
+        }
+
+        public void RemoveCreatedLabel(Label timerLabel)
+        {
+            ((Grid)(timerLabel.Parent)).Children.Remove(timerLabel);
         }
 
         public void StartCountdown(int time)
