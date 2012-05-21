@@ -87,12 +87,5 @@ namespace NetJungleTimer.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
-        
-        internal static System.Drawing.Bitmap YesImRunningCat {
-            get {
-                object obj = ResourceManager.GetObject("YesImRunningCat", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
     }
 }

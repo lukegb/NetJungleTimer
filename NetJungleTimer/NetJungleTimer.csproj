@@ -110,9 +110,6 @@
       <DependentUpon>WelcomeWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="WindowsApi.cs" />
-    <Compile Include="YesImRunningWindow.xaml.cs">
-      <DependentUpon>YesImRunningWindow.xaml</DependentUpon>
-    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -126,10 +123,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="WelcomeWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="YesImRunningWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -174,9 +167,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Baron.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\YesImRunningCat.jpg" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
