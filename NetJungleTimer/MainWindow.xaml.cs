@@ -20,15 +20,12 @@ namespace NetJungleTimer
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, NetProtoUI
     {
         const int UI_TIMER_TICK = 500;
         const int PROCESSING_TIMER_TICK = 250;
         const int NET_TIMER_TICK = 500;
         const int KEYBOARD_TIMER_TICK = 20;
-
-        const String REMOTE_SERVER = "guy.deserves.a.hug.at.lukegb.com";
-        const int REMOTE_PORT = 9446;
 
         DispatcherTimer uiTimer;
         DispatcherTimer processingTimer;
@@ -48,47 +45,38 @@ namespace NetJungleTimer
         JungleTimer[] jungleTimers;
         public KeyboardManager keyboardManager;
 
-        YesImRunningWindow yirw;
+        WelcomeWindow welWin;
         private Mutex m;
         private bool propagateExit = false;
 
-        private bool _isMaster;
-        public bool isMaster
-        {
-            get
-            {
-                return this._isMaster;
-            }
-            private set
-            {
-                this._isMaster = value;
-            }
-        }
-
         DateTime masterLastResyncedData;
 
-        public MainWindow()
+        public MainWindow(Mutex mut, WelcomeWindow welWin, NetProto netJungleProto)
         {
+            this.m = mut;
+
             InitializeComponent();
 
-            yirw = new YesImRunningWindow();
-            yirw.Left = 0;
-            yirw.Top = 0;
-            yirw.Show();
-            yirw.Left = 0;
-            yirw.Top = 0;
+            this.welWin = welWin;
+            this.netJungleProto = netJungleProto;
 
             ResetState();
             
         }
 
+        public void GoAway()
+        {
+            uiTimer.Stop();
+            processingTimer.Stop();
+            netJungleProto = null;
+            uiTimer = null;
+            processingTimer = null;
+            welWin = null;
+            keyboardManager = null;
+        }
+
         protected void ResetState()
         {
-
-            // set up networking
-            isMaster = false;
-            netJungleProto = new NetProto(this, REMOTE_SERVER, REMOTE_PORT);
-            netJungleProto.Go();
 
             keyboardManager = new KeyboardManager(this);
 
@@ -115,24 +103,11 @@ namespace NetJungleTimer
             // this has to happen *after* all the Windows initialisation is done.
             WindowInteropHelper wiHelper = new WindowInteropHelper(this);
             WindowsApi.SetWindowNoActivate(wiHelper.Handle);
-
-            wiHelper = new WindowInteropHelper(yirw);
-            WindowsApi.SetWindowNoActivate(wiHelper.Handle);
         }
 
         private void Window_Loaded_1(object sender, RoutedEventArgs e)
         {
             this.Visibility = Visibility.Hidden;
-
-            // go go mutex
-            bool createdNew;
-            m = new Mutex(true, "NetJungleTimer", out createdNew);
-
-            if (!createdNew)
-            {
-                MessageBox.Show("You're already running me. ):", "You Retard", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
-                this.Close();
-            }
 
             uiTimer = new DispatcherTimer();
             uiTimer.Interval = TimeSpan.FromMilliseconds(UI_TIMER_TICK);
@@ -158,29 +133,28 @@ namespace NetJungleTimer
             {
                 connectionStatusText.Content = "Connection lost";
             }
-            else if (message.StartsWith("&NOTMASTER"))
+            else if (message.StartsWith("!RECONNECT"))
             {
-                isMaster = false;
+                String[] messageSplit = message.Split(new[] { ' ' });
+                connectionStatusText.Content = String.Format("Connect attempt #{0}", messageSplit[1]);
             }
-            else if (message.StartsWith("&NEWMASTER"))
-            {
-                isMaster = true;
-                SyncData();
-            }
-            else if (message.StartsWith("CONN") && isMaster)
+            else if (message.StartsWith("CONN") && netJungleProto.isMaster)
             {
                 SyncData();
             }
 
-            if (isMaster)
-                connectionStatusText.Content = "Connected [MASTER]";
-            else
-                connectionStatusText.Content = "Connected";
+            if (!message.StartsWith("!")) // internal message
+            {
+                if (netJungleProto.isMaster)
+                    connectionStatusText.Content = "Connected [MASTER]";
+                else
+                    connectionStatusText.Content = "Connected";
+            }
         }
 
         private void SyncData()
         {
-            if (!isMaster)
+            if (!netJungleProto.isMaster)
                 return;
 
             masterLastResyncedData = DateTime.Now;
@@ -218,9 +192,6 @@ namespace NetJungleTimer
             if (windowCaption.ToLower().Contains("league of legends (tm) client"))
             {
                 keyboardManager.EnsureNumLockEnabled();
-                yirw.Visibility = Visibility.Hidden;
-                yirw.Left = 0;
-                yirw.Top = 0;
                 this.Visibility = Visibility.Visible;
                 DateTime start = DateTime.Now;
 
@@ -245,7 +216,6 @@ namespace NetJungleTimer
             }
             else
             {
-                yirw.Visibility = Visibility.Visible;
                 this.Visibility = Visibility.Hidden;
             }
 
@@ -261,7 +231,7 @@ namespace NetJungleTimer
                 }
             }
 
-            if (isMaster && masterLastResyncedData.Add(new TimeSpan(0, 0, 20)) < DateTime.Now)
+            if (netJungleProto.isMaster && masterLastResyncedData.Add(new TimeSpan(0, 0, 20)) < DateTime.Now)
             {
                 this.SyncData();
             }
@@ -296,6 +266,16 @@ namespace NetJungleTimer
         public void NetBroadcast(String what)
         {
             netJungleProto.SendMessage(what);
+        }
+
+        internal void Disconnect()
+        {
+            netJungleProto.Stop();
+        }
+
+        public Dispatcher GetDispatcher()
+        {
+            return this.Dispatcher;
         }
     }
 }
