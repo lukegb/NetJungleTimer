@@ -138,6 +138,7 @@ namespace NetJungleTimer
             UserName.IsEnabled = NetworkingEnabled;
             ServerHost.IsEnabled = NetworkingEnabled;
             GameName.IsEnabled = NetworkingEnabled;
+            ServerPassword.IsEnabled = NetworkingEnabled;
 
             LocalMode.IsEnabled = GloballyEnabled;
             SpeechSynth.IsEnabled = GloballyEnabled;
@@ -150,6 +151,7 @@ namespace NetJungleTimer
             GameName.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
             ServerHost.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
             UserName.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
+            ServerPassword.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
 
             // do some validation
             int fieldsMustSpecify = 0;
@@ -229,7 +231,7 @@ namespace NetJungleTimer
                 int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
                 String RemoteRoom = GameName.Text;
 
-                NetJungleProto = (INetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, RemoteRoom);
+                NetJungleProto = (INetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, ServerPassword.Password, RemoteRoom);
                 NetJungleProto.NewNetworkMessage += new NewNetworkMessageHandler(this.OnNetworkMessage);
                 NetJungleProto.Go();
             }
@@ -252,6 +254,10 @@ namespace NetJungleTimer
 
             if (message == "&CONN")
             {
+                SetStatusLabel("Logging in...");
+            }
+            else if (message == "&LOGGEDIN")
+            {
                 mw = new MainWindow(this.m, this, this.NetJungleProto);
                 mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
                 App.Current.MainWindow = mw;
@@ -266,6 +272,20 @@ namespace NetJungleTimer
 
                 ActionButton.Content = UseLocalMode ? "Stop" : "Disconnect";
                 SetFormFieldsEnabled(false, true);
+            }
+            else if (message == "&BADPASS")
+            {
+                RunningMain = false;
+
+                NetJungleProto.Stop();
+                NetJungleProto = null;
+
+                SetStatusLabel("Error: password incorrect");
+                ActionButton.Content = "Connect";
+                SetFormFieldsEnabled(true, true);
+
+                ServerPassword.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                ServerPassword.Focus();
             }
             else if (message == "!RECONNECT 4")
             {
@@ -285,6 +305,7 @@ namespace NetJungleTimer
         {
             NetJungleTimer.Properties.Settings.Default.username = UserName.Text;
             NetJungleTimer.Properties.Settings.Default.hostname = ServerHost.Text;
+            NetJungleTimer.Properties.Settings.Default.hostpassword = ServerPassword.Password;
             NetJungleTimer.Properties.Settings.Default.roomName = GameName.Text;
             NetJungleTimer.Properties.Settings.Default.useSpeechSynth = (bool)SpeechSynth.IsChecked;
         }
@@ -294,6 +315,7 @@ namespace NetJungleTimer
             NetJungleTimer.Properties.Settings.Default.Reload();
             UserName.Text = NetJungleTimer.Properties.Settings.Default.username;
             ServerHost.Text = NetJungleTimer.Properties.Settings.Default.hostname;
+            ServerPassword.Password = NetJungleTimer.Properties.Settings.Default.hostpassword;
             GameName.Text = NetJungleTimer.Properties.Settings.Default.roomName;
             SpeechSynth.IsChecked = NetJungleTimer.Properties.Settings.Default.useSpeechSynth;
         }

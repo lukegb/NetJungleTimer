@@ -70,5 +70,17 @@ namespace NetJungleTimer.Properties {
                 this["useSpeechSynth"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string hostpassword {
+            get {
+                return ((string)(this["hostpassword"]));
+            }
+            set {
+                this["hostpassword"] = value;
+            }
+        }
     }
 }

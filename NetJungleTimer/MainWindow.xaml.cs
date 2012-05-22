@@ -194,8 +194,12 @@ namespace NetJungleTimer
 
             if (message.StartsWith("NETTIMER "))
             {
-                foreach (NetworkedTimer netTimer in networkedTimers)
+                foreach (UI.IUIElement iui in uiElements)
                 {
+                    if (!(iui is NetworkedTimer))
+                        continue;
+
+                    var netTimer = iui as NetworkedTimer;
                     netTimer.GotMessage(message);
                 }
             }
@@ -373,9 +377,9 @@ namespace NetJungleTimer
 
             bool suppress = false;
 
-            foreach (NetworkedTimer jt in networkedTimers)
+            foreach (IUIElement iui in uiElements)
             {
-                if (jt.GotKey(key))
+                if (iui.GotKey(key))
                     suppress = true;
             }
             return suppress;
