@@ -15,6 +15,7 @@ namespace NetJungleTimer
         int Port;
         String UserName;
         String RoomName;
+        String Password;
 
         TcpClient TcpClient;
         NetworkStream NetStream;
@@ -35,12 +36,13 @@ namespace NetJungleTimer
 
         public event NewNetworkMessageHandler NewNetworkMessage;
 
-        public LiveNetProto(String host, int port, String username, String roomName)
+        public LiveNetProto(String host, int port, String username, String password, String roomName)
         {
             this.HostName = host;
             this.Port = port;
             this.UserName = username;
             this.RoomName = roomName;
+            this.Password = password;
         }
 
         public void Go()
@@ -201,11 +203,11 @@ namespace NetJungleTimer
 
             NetStream.Write(System.Text.Encoding.ASCII.GetBytes("CONN\n"), 0, 5);
 
-            String joinStr = String.Format("LOGIN {0} {1}\n", this.UserName, "-");
+            String joinStr = String.Format("&LOGIN {0} {1}\n", this.UserName, this.Password);
             byte[] joinBytes = System.Text.Encoding.ASCII.GetBytes(joinStr);
             NetStream.Write(joinBytes, 0, joinBytes.Length);
 
-            joinStr = String.Format("JOIN {0}\n", this.RoomName);
+            joinStr = String.Format("&JOIN {0}\n", this.RoomName);
             joinBytes = System.Text.Encoding.ASCII.GetBytes(joinStr);
             NetStream.Write(joinBytes, 0, joinBytes.Length);
 
