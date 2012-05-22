@@ -1,4 +1,4 @@
-﻿#define HIDE_ALL_THE_THINGS
+﻿//#define HIDE_ALL_THE_THINGS
 
 using System;
 using System.Collections.Generic;
@@ -72,6 +72,11 @@ namespace NetJungleTimer
             KeyboardManager.Instance.HotKeyPressed += new HotKeyPressedEventHandler(OnHotKeyHandlerWrapper);
 
             ResetState();
+
+            if (netJungleProto is MockupNetProto)
+            {
+                this.layoutGrid.RowDefinitions[0].Height = new GridLength(0);
+            }
         }
 
         ~MainWindow()

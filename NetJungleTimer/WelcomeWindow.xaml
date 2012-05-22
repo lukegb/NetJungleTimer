@@ -2,11 +2,16 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="NetJungleTimer.WelcomeWindow"
-        Title="Welcome to NetJungler" Height="387" Width="407" Closing="Window_Closing_1" ResizeMode="CanMinimize">
+        Title="Welcome to NetJungler" Height="400" Width="420" Closing="Window_Closing_1" ResizeMode="CanMinimize">
     <Grid>
-        <Label Content="Welcome to" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,15,0,0"/>
-        <Label Content="Net Jungler!" HorizontalAlignment="Center" Margin="0,40,0,0" VerticalAlignment="Top" FontSize="22" FontWeight="Bold"/>
-        <Grid Height="210" Margin="10,94,10,0" VerticalAlignment="Top">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="90" />
+            <RowDefinition />
+            <RowDefinition Height="60" />
+        </Grid.RowDefinitions>
+        <Label Content="Welcome to" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,15,0,0" Grid.Row="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Label Content="Net Jungler!" HorizontalAlignment="Center" Margin="0,40,0,0" VerticalAlignment="Top" FontSize="22" FontWeight="Bold" Grid.Row="0"/>
+        <Grid Grid.Row="1" Margin="10,10,10,10" d:LayoutOverrides="Width">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="90"/>
                 <ColumnDefinition />
@@ -32,8 +37,8 @@
             <Button x:Name="ActionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="5" d:LayoutOverrides="Height" TabIndex="4" Click="Button_Click_1" IsDefault="True"/>
 
         </Grid>
-        <Label x:Name="statusLabel" Content="Status: Ready" HorizontalAlignment="Center" Margin="0,0,0,20" VerticalAlignment="Bottom"/>
-        <Label x:Name="versionLabel" Content="VERSION INFO" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Label x:Name="statusLabel" Content="Status: Ready" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Label x:Name="versionLabel" Content="VERSION INFO" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0"/>
 
     </Grid>
 </Window>
