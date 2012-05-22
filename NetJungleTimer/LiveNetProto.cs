@@ -9,7 +9,7 @@ using System.Windows.Threading;
 
 namespace NetJungleTimer
 {
-    public class LiveNetProto : NetProto
+    public class LiveNetProto : INetProto
     {
         String HostName;
         int Port;

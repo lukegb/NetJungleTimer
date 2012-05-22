@@ -24,7 +24,7 @@ namespace NetJungleTimer
         private Mutex m;
         private MainWindow mw;
 
-        private NetProto NetJungleProto;
+        private INetProto NetJungleProto;
 
         private bool RunningMain = false;
 
@@ -213,13 +213,13 @@ namespace NetJungleTimer
                 int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
                 String RemoteRoom = GameName.Text;
 
-                NetJungleProto = (NetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, RemoteRoom);
+                NetJungleProto = (INetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, RemoteRoom);
                 NetJungleProto.NewNetworkMessage += new NewNetworkMessageHandler(this.OnNetworkMessage);
                 NetJungleProto.Go();
             }
             else
             {
-                NetJungleProto = (NetProto)new MockupNetProto();
+                NetJungleProto = (INetProto)new MockupNetProto();
                 this.OnNetworkMessage(this, new NewNetworkMessageEventArgs("&CONN")); // mock a connected message
             }
         }
@@ -271,7 +271,6 @@ namespace NetJungleTimer
             NetJungleTimer.Properties.Settings.Default.hostname = ServerHost.Text;
             NetJungleTimer.Properties.Settings.Default.roomName = GameName.Text;
             NetJungleTimer.Properties.Settings.Default.useSpeechSynth = (bool)SpeechSynth.IsChecked;
-            NetJungleTimer.Properties.Settings.Default.Save();
         }
 
         public void LoadLastConnectedSettings()
@@ -298,6 +297,7 @@ namespace NetJungleTimer
 
                 RidSelfOfMainWindow();
             }
+            NetJungleTimer.Properties.Settings.Default.Save();
         }
 
         public void SetStatusLabel(String newText)

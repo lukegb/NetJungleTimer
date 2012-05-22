@@ -44,7 +44,7 @@ namespace NetJungleTimer
         bool triggeredPreWarning = false;
         int flashingLastSecond = 0;
 
-        NetProto currentNetProto;
+        INetProto currentNetProto;
 
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
         private Color PRE_WARNING_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aaff0000"));
@@ -54,7 +54,7 @@ namespace NetJungleTimer
         public event TimerFinalCountHandler TimerFinalCountdownReached;
 
 
-        internal NetworkedTimer(NetworkedTimerContext ntc, NetProto currentNetProto)
+        internal NetworkedTimer(NetworkedTimerContext ntc, INetProto currentNetProto)
         {
             this.context = ntc;
             this.currentNetProto = currentNetProto;
@@ -196,12 +196,28 @@ namespace NetJungleTimer
 
             if (message_split[1] == context.NetworkMessage)
             {
-                SyncCountdown(int.Parse(message_split[2]));
+                if (message_split[2] == "CANCEL")
+                {
+                    endCountdown = DateTime.Now;
+                    EndCountdown();
+                }
+                else
+                {
+                    try
+                    {
+                        SyncCountdown(int.Parse(message_split[2]));
+                    }
+                    catch {} // if it failed, we don't care. if it's an actual message it'll be resent
+                }
             }
         }
 
         internal bool GotKey(KeyboardManager.KMKey hotKey)
         {
+            KeyboardManager.KMKey cancelKey = (KeyboardManager.KMKey)context.Hotkey.Clone();
+            cancelKey.InvertCtrlDown();
+            
+
             if (hotKey.Equals(context.Hotkey))
             {
                 // yay
@@ -209,6 +225,14 @@ namespace NetJungleTimer
                 StartCountdown(context.Countdown);
                 return true;
             }
+            else if (hotKey.Equals(cancelKey))
+            {
+                this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " CANCEL");
+                endCountdown = DateTime.Now;
+                EndCountdown();
+                return true;
+            }
+
             return false;
         }
 

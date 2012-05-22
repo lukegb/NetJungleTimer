@@ -22,7 +22,7 @@ namespace NetJungleTimer
 
     public class KeyboardManager : IDisposable
     {
-        public class KMKey : IEquatable<KMKey>
+        public class KMKey : IEquatable<KMKey>, ICloneable
         {
 
             public bool CtrlDown { get; private set; }
@@ -45,6 +45,11 @@ namespace NetJungleTimer
                 CtrlDown = false;
                 AltDown = false;
                 ShiftDown = false;
+            }
+
+            public void InvertCtrlDown()
+            {
+                CtrlDown = !CtrlDown;
             }
 
             public bool Equals(KMKey other)
@@ -90,6 +95,11 @@ namespace NetJungleTimer
             public override String ToString()
             {
                 return String.Format("<Key: {0}, CtrlDown: {1}, AltDown: {2}, ShiftDown: {3}>", Key, CtrlDown, AltDown, ShiftDown);
+            }
+
+            public object Clone()
+            {
+                return new KMKey(this.Key, this.CtrlDown, this.AltDown, this.ShiftDown);
             }
         }
 

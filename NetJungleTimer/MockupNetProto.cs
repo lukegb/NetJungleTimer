@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NetJungleTimer
 {
-    class MockupNetProto : NetProto
+    class MockupNetProto : INetProto
     {
         public bool IsMaster
         {

@@ -1,6 +1,4 @@
-﻿//#define HIDE_ALL_THE_THINGS
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Speech.Synthesis;
@@ -46,7 +44,7 @@ namespace NetJungleTimer
 
         IntPtr leagueOfLegendsWindowHndl;
 
-        NetProto netJungleProto;
+        INetProto netJungleProto;
         NetworkedTimer[] networkedTimers;
         public KeyboardManager KeyboardManager;
 
@@ -58,7 +56,22 @@ namespace NetJungleTimer
 
         SpeechSynthesizer synth = new SpeechSynthesizer();
 
-        public MainWindow(Mutex mut, WelcomeWindow welWin, NetProto netJungleProto)
+        private bool showHideWindow = false;
+        int konamiCodeSteps = 0;
+        Key[] konamiCode = new Key[] {
+            Key.Up,
+            Key.Up,
+            Key.Down,
+            Key.Down,
+            Key.Left,
+            Key.Right,
+            Key.Left,
+            Key.Right,
+            Key.B,
+            Key.A
+        };
+
+        public MainWindow(Mutex mut, WelcomeWindow welWin, INetProto netJungleProto)
         {
             this.m = mut;
 
@@ -105,6 +118,9 @@ namespace NetJungleTimer
             if (netJungleProto != null)
                 netJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
             netJungleProto = null;
+
+            KeyboardManager.Instance.HotKeyPressed -= new HotKeyPressedEventHandler(OnHotKeyHandlerWrapper);
+
             welWin = null;
         }
 
@@ -142,9 +158,8 @@ namespace NetJungleTimer
 
         private void Window_Loaded_1(object sender, RoutedEventArgs e)
         {
-#if HIDE_ALL_THE_THINGS
-            this.Visibility = Visibility.Hidden;
-#endif
+            if (!this.showHideWindow)
+                this.Visibility = Visibility.Hidden;
 
             uiTimer = new DispatcherTimer();
             uiTimer.Interval = TimeSpan.FromMilliseconds(UI_TIMER_TICK);
@@ -212,10 +227,8 @@ namespace NetJungleTimer
 
         private void uiTimer_Tick(object sender, EventArgs e)
         {
-#if HIDE_ALL_THE_THINGS
             if (this.Visibility != Visibility.Visible)
                 return;
-#endif
 
             DateTime now = DateTime.Now;
             foreach (NetworkedTimer jt in networkedTimers)
@@ -264,19 +277,16 @@ namespace NetJungleTimer
                     this.Width = leagueOfLegendsWindowDimensions.Width - leftMod - rightMod;
                     this.Height = leagueOfLegendsWindowDimensions.Height - topMod - botMod;
 
-#if HIDE_ALL_THE_THINGS
-                    this.Visibility = Visibility.Visible;
-#endif
+                    if (!this.showHideWindow)
+                        this.Visibility = Visibility.Visible;
 
                     leagueOfLegendsWindowHndl = tempHandle; // we found it <3
                 }
             }
             else
             {
-                
-#if HIDE_ALL_THE_THINGS
-                this.Visibility = Visibility.Hidden;
-#endif
+                if (!this.showHideWindow)
+                    this.Visibility = Visibility.Hidden;
             }
 
             sb = null; // nuke the stringbuilder
@@ -327,11 +337,29 @@ namespace NetJungleTimer
                 }
             }
 
+            // konami code check
+            if (konamiCode[konamiCodeSteps] == key.Key)
+            {
+                if (++konamiCodeSteps == konamiCode.Length)
+                {
+                    konamiCodeSteps = 0;
+                    showHideWindow = !showHideWindow;
+                    connectionStatusText.Content = "KONAMI CODE HACKTIVATED";
+                    this.Visibility = Visibility.Visible;
+                    this.Top = 0;
+                    this.Left = 0;
+                    this.Width = System.Windows.SystemParameters.FullPrimaryScreenWidth;
+                    this.Height = System.Windows.SystemParameters.FullPrimaryScreenHeight;
+                }
+            }
+            else
+            {
+                konamiCodeSteps = 0;
+            }
+
             
-#if HIDE_ALL_THE_THINGS
             if (this.Visibility != Visibility.Visible)
                 return false;
-#endif
 
             bool suppress = false;
 

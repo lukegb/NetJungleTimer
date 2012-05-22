@@ -17,7 +17,7 @@ namespace NetJungleTimer
 
     public delegate void NewNetworkMessageHandler(object sender, NewNetworkMessageEventArgs e);
 
-    public interface NetProto
+    public interface INetProto
     {
         bool IsMaster { get; }
 

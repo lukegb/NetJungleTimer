@@ -5,7 +5,7 @@
         Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded_1" AllowsTransparency="True" Background="#00000000" WindowStyle="None" ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False">
     <Grid x:Name="layoutGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="20" />
+            <RowDefinition Height="23" />
             <RowDefinition />
         </Grid.RowDefinitions>
         <Grid x:Name="connectionStatusGrid" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="0">
