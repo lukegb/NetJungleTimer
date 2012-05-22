@@ -53,7 +53,14 @@ namespace NetJungleTimer
             if (ApplicationDeployment.IsNetworkDeployed)
             {
                 Version currentVersion = ApplicationDeployment.CurrentDeployment.CurrentVersion;
-                versionLabel.Content = String.Format("v{0}", currentVersion.ToString());
+#if DEBUG
+                string whatBuild = "+D";
+#elif RELEASE
+                string whatBuild = "";
+#else
+                string whatBuild = "+?";
+#endif
+                versionLabel.Content = String.Format("v{0}{1}", currentVersion.ToString(), whatBuild);
 
                 SetFormFieldsEnabled(false);
                 SetStatusLabel("Checking for updates...");
@@ -62,7 +69,14 @@ namespace NetJungleTimer
             }
             else
             {
-                versionLabel.Content = "<<DEVELOPMENT BUILD>>";
+#if DEBUG
+                string whatBuild = "DEBUG";
+#elif RELEASE
+                string whatBuild = "RELEASE";
+#else
+                string whatBuild = "???";
+#endif
+                versionLabel.Content = String.Format("<<DEVELOPMENT BUILD: {0}>>", whatBuild);
             }
 
             LoadLastConnectedSettings();
