@@ -19,7 +19,7 @@ namespace NetJungleTimer
     /// <summary>
     /// Interaction logic for WelcomeWindow.xaml
     /// </summary>
-    public partial class WelcomeWindow : Window, NetProtoUI
+    public partial class WelcomeWindow : Window
     {
         private Mutex m;
         private MainWindow mw;
@@ -184,16 +184,22 @@ namespace NetJungleTimer
                 else
                     SetStatusLabel("Disconnecting...");
 
-                RunningMain = false;
-                App.Current.MainWindow = this;
-                mw.Disconnect();
-                mw.GoAway();
-                mw = null;
+                RidSelfOfMainWindow();
 
                 ActionButton.Content = (UseLocalMode) ? "Start" : "Connect";
                 SetFormFieldsEnabled(true);
                 SetStatusLabel("Ready.");
             }
+        }
+
+        private void RidSelfOfMainWindow()
+        {
+            RunningMain = false;
+            App.Current.MainWindow = this;
+            mw.Disconnect();
+            mw.GoAway();
+            mw.Close();
+            mw = null;
         }
 
 
@@ -207,25 +213,33 @@ namespace NetJungleTimer
                 int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
                 String RemoteRoom = GameName.Text;
 
-                NetJungleProto = new LiveNetProto((NetProtoUI)this, RemoteServer, RemotePort, UserName.Text, RemoteRoom);
+                NetJungleProto = (NetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, RemoteRoom);
+                NetJungleProto.NewNetworkMessage += new NewNetworkMessageHandler(this.OnNetworkMessage);
                 NetJungleProto.Go();
             }
             else
             {
-                NetJungleProto = new MockupNetProto();
-                this.OnNetworkMessage("&CONN"); // mock a connected message
+                NetJungleProto = (NetProto)new MockupNetProto();
+                this.OnNetworkMessage(this, new NewNetworkMessageEventArgs("&CONN")); // mock a connected message
             }
         }
 
-
-        public void OnNetworkMessage(String message)
+        public void OnNetworkMessage(object sender, NewNetworkMessageEventArgs e)
         {
+            if (!this.Dispatcher.CheckAccess())
+            {
+                this.Dispatcher.Invoke(new Action<object, NewNetworkMessageEventArgs>(OnNetworkMessage), sender, e);
+                return;
+            }
+
+            string message = e.NetworkMessage;
+
             if (message == "&CONN")
             {
                 mw = new MainWindow(this.m, this, this.NetJungleProto);
                 mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
                 App.Current.MainWindow = mw;
-                this.NetJungleProto.Parent = (NetProtoUI)mw;
+                NetJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
                 mw.Show();
 
                 SaveLastConnectedSettings();
@@ -278,11 +292,11 @@ namespace NetJungleTimer
         {
             if (mw != null)
             {
-                mw.Disconnect();
-                mw.GoAway();
-                mw.Close();
-                App.Current.MainWindow = this;
-                mw = null;
+                if (NetJungleProto != null)
+                    NetJungleProto.Stop();
+                NetJungleProto = null;
+
+                RidSelfOfMainWindow();
             }
         }
 

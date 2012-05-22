@@ -21,6 +21,6 @@ namespace NetJungleTimer
 
         public void SendMessage(string message) { }
 
-        public NetProtoUI Parent { get; set; }
+        public event NewNetworkMessageHandler NewNetworkMessage;
     }
 }

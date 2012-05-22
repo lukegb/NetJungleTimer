@@ -106,7 +106,6 @@
     </ApplicationDefinition>
     <Compile Include="MockupNetProto.cs" />
     <Compile Include="NetProto.cs" />
-    <Compile Include="NetProtoUI.cs" />
     <Compile Include="NetworkedTimer.cs" />
     <Compile Include="KeyboardManager.cs" />
     <Compile Include="LiveNetProto.cs" />

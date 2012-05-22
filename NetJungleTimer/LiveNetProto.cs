@@ -18,7 +18,6 @@ namespace NetJungleTimer
 
         TcpClient TcpClient;
         NetworkStream NetStream;
-        public NetProtoUI Parent { get; set; }
 
         Thread RecvThread;
         Thread SendThread;
@@ -32,13 +31,12 @@ namespace NetJungleTimer
 
         public bool IsMaster { get; private set; }
 
-
         public bool Connected { get { if (TcpClient == null) return false; return TcpClient.Connected; } }
 
-        public LiveNetProto(NetProtoUI parent, String host, int port, String username, String roomName)
-        {
-            this.Parent = parent;
+        public event NewNetworkMessageHandler NewNetworkMessage;
 
+        public LiveNetProto(String host, int port, String username, String roomName)
+        {
             this.HostName = host;
             this.Port = port;
             this.UserName = username;
@@ -162,22 +160,35 @@ namespace NetJungleTimer
 
         public void Stop()
         {
-            MessageQueue.Enqueue("&DISCONNECT");
-            while (Connected && MessageQueue.Count > 0)
+            if (MessageQueue != null)
             {
-                Thread.Sleep(20);
+                MessageQueue.Enqueue("&DISCONNECT");
+                while (Connected && MessageQueue.Count > 0)
+                {
+                    Thread.Sleep(20);
+                }
+                MessageQueue.Clear();
             }
-            RecvThread.Abort();
-            SendThread.Abort();
-            PingThread.Abort();
+
+            if (RecvThread != null)
+                RecvThread.Abort();
+            RecvThread = null;
+
+            if (SendThread != null)
+                SendThread.Abort();
+            SendThread = null;
+
+            if (PingThread != null)
+                PingThread.Abort();
+            PingThread = null;
+
             this.Disconnect();
         }
 
         private void NotifyUI(String what)
         {
-            Parent.GetDispatcher().Invoke(DispatcherPriority.Normal,
-                new Action<String>(Parent.OnNetworkMessage),
-                what);
+            if (this.NewNetworkMessage != null)
+                this.NewNetworkMessage(this, new NewNetworkMessageEventArgs(what));
         }
 
 

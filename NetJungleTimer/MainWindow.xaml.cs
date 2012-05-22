@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define HIDE_ALL_THE_THINGS
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Speech.Synthesis;
@@ -21,7 +23,7 @@ namespace NetJungleTimer
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window, NetProtoUI
+    public partial class MainWindow : Window
     {
         const int UI_TIMER_TICK = 100;
         const int PROCESSING_TIMER_TICK = 250;
@@ -46,7 +48,7 @@ namespace NetJungleTimer
 
         NetProto netJungleProto;
         NetworkedTimer[] networkedTimers;
-        public KeyboardManager keyboardManager;
+        public KeyboardManager KeyboardManager;
 
         WelcomeWindow welWin;
         private Mutex m;
@@ -65,6 +67,10 @@ namespace NetJungleTimer
             this.welWin = welWin;
             this.netJungleProto = netJungleProto;
 
+            netJungleProto.NewNetworkMessage += new NewNetworkMessageHandler(this.OnNetworkMessage);
+
+            KeyboardManager.Instance.HotKeyPressed += new HotKeyPressedEventHandler(OnHotKeyHandlerWrapper);
+
             ResetState();
         }
 
@@ -75,6 +81,8 @@ namespace NetJungleTimer
 
         public void GoAway()
         {
+            leagueOfLegendsWindowHndl = IntPtr.Zero;
+
             if (uiTimer != null)
                 uiTimer.Stop();
             uiTimer = null;
@@ -89,31 +97,32 @@ namespace NetJungleTimer
 
             networkedTimers = null; // bye ;D
 
+            if (netJungleProto != null)
+                netJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
             netJungleProto = null;
             welWin = null;
-            keyboardManager = null;
         }
 
         protected void ResetState()
         {
-            keyboardManager = null;
             networkedTimers = null;
 
-            keyboardManager = new KeyboardManager(this);
-
             // let's go
-            networkedTimers = new NetworkedTimer[6];
-            networkedTimers[0] = new NetworkedTimer(this, new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"));
-            networkedTimers[1] = new NetworkedTimer(this, new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"));
-            networkedTimers[2] = new NetworkedTimer(this, new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"));
-            networkedTimers[3] = new NetworkedTimer(this, new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"));
-            networkedTimers[4] = new NetworkedTimer(this, new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"));
-            networkedTimers[5] = new NetworkedTimer(this, new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"));
+            networkedTimers = new NetworkedTimer[6]
+            {
+                new NetworkedTimer(new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"), this.netJungleProto),
+                new NetworkedTimer(new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"), this.netJungleProto),
+                new NetworkedTimer(new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"), this.netJungleProto),
+                new NetworkedTimer(new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"), this.netJungleProto),
+                new NetworkedTimer(new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"), this.netJungleProto),
+                new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto)
+            };
 
-            // now for our quit hotkey...
-            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.NumLock, true, true, false));
-
-            keyboardManager.ListenToKey(new KeyboardManager.KMKey(Key.F9, true, true, false));
+            foreach (NetworkedTimer nt in networkedTimers)
+            {
+                nt.TimerExpired += new TimerExpiryHandler(OnTimerExpiry);
+                nt.TimerFinalCountdownReached += new TimerFinalCountHandler(OnTimerFinalCountdown);
+            }
         }
 
         protected override void OnActivated(EventArgs e)
@@ -128,7 +137,9 @@ namespace NetJungleTimer
 
         private void Window_Loaded_1(object sender, RoutedEventArgs e)
         {
+#if HIDE_ALL_THE_THINGS
             this.Visibility = Visibility.Hidden;
+#endif
 
             uiTimer = new DispatcherTimer();
             uiTimer.Interval = TimeSpan.FromMilliseconds(UI_TIMER_TICK);
@@ -141,8 +152,16 @@ namespace NetJungleTimer
             processingTimer.Start();
         }
 
-        public void OnNetworkMessage(String message)
+        public void OnNetworkMessage(object sender, NewNetworkMessageEventArgs e)
         {
+            if (!this.Dispatcher.CheckAccess())
+            {
+                this.Dispatcher.Invoke(new Action<object, NewNetworkMessageEventArgs>(OnNetworkMessage), sender, e);
+                return;
+            }
+
+            string message = e.NetworkMessage;
+
             if (message.StartsWith("NETTIMER "))
             {
                 foreach (NetworkedTimer netTimer in networkedTimers)
@@ -188,8 +207,10 @@ namespace NetJungleTimer
 
         private void uiTimer_Tick(object sender, EventArgs e)
         {
+#if HIDE_ALL_THE_THINGS
             if (this.Visibility != Visibility.Visible)
                 return;
+#endif
 
             DateTime now = DateTime.Now;
             foreach (NetworkedTimer jt in networkedTimers)
@@ -202,7 +223,7 @@ namespace NetJungleTimer
         {
             if (propagateExit)
             {
-                keyboardManager.EnsureNumLockEnabled();
+                KeyboardManager.Instance.EnsureNumLockEnabled();
                 System.Environment.Exit(0);
             }
 
@@ -216,7 +237,7 @@ namespace NetJungleTimer
             // okay, so now we have the name of this mystery foreground window...
             if (windowCaption.ToLower().Contains("league of legends (tm) client"))
             {
-                keyboardManager.EnsureNumLockEnabled();
+                KeyboardManager.Instance.EnsureNumLockEnabled();
                 DateTime start = DateTime.Now;
 
                 // let's go move ourselves to the right place
@@ -237,14 +258,20 @@ namespace NetJungleTimer
                     this.Top = leagueOfLegendsWindowDimensions.Top + topMod;
                     this.Width = leagueOfLegendsWindowDimensions.Width - leftMod - rightMod;
                     this.Height = leagueOfLegendsWindowDimensions.Height - topMod - botMod;
+
+#if HIDE_ALL_THE_THINGS
                     this.Visibility = Visibility.Visible;
+#endif
 
                     leagueOfLegendsWindowHndl = tempHandle; // we found it <3
                 }
             }
             else
             {
+                
+#if HIDE_ALL_THE_THINGS
                 this.Visibility = Visibility.Hidden;
+#endif
             }
 
             sb = null; // nuke the stringbuilder
@@ -266,8 +293,21 @@ namespace NetJungleTimer
 
         }
 
-        public bool OnHotKeyHandler(KeyboardManager.KMKey key)
+        private void OnHotKeyHandlerWrapper(object sender, HotKeyPressedEventArgs e)
         {
+            OnHotKeyHandler(sender, e);
+        }
+
+        private bool OnHotKeyHandler(object sender, HotKeyPressedEventArgs e)
+        {
+            if (!this.Dispatcher.CheckAccess())
+            {
+                this.Dispatcher.Invoke(new Func<object, HotKeyPressedEventArgs, bool>(OnHotKeyHandler), sender, e);
+                return false;
+            }
+
+            KeyboardManager.KMKey key = e.Key;
+
             if (key.Equals(new KeyboardManager.KMKey(Key.NumLock, true, true, false)))
             {
                 propagateExit = true;
@@ -282,8 +322,11 @@ namespace NetJungleTimer
                 }
             }
 
+            
+#if HIDE_ALL_THE_THINGS
             if (this.Visibility != Visibility.Visible)
                 return false;
+#endif
 
             bool suppress = false;
 
@@ -310,20 +353,20 @@ namespace NetJungleTimer
             return this.Dispatcher;
         }
 
-        internal void OnTimerExpiry(NetworkedTimer thisTimer)
+        internal void OnTimerExpiry(object sender, EventArgs e)
         {
-            /*if (netJungleProto.IsMaster)
-            {
-                keyboardManager.SendAlliedChatMessage(thisTimer.context.ChatMessageComplete);
-            }*/
+            NetworkedTimer nt = sender as NetworkedTimer;
+
             if (this.UseSpeechSynth)
-                synth.SpeakAsync(String.Format("{0}'s up.", thisTimer.context.ChatMessageComplete));
+                synth.SpeakAsync(String.Format("{0}'s up.", nt.context.ChatMessageComplete));
         }
 
-        internal void OnTimerFinalCountdown(NetworkedTimer thisTimer, int finalLength)
+        internal void OnTimerFinalCountdown(object sender, EventArgs e)
         {
+            NetworkedTimer nt = sender as NetworkedTimer;
+
             if (this.UseSpeechSynth)
-                synth.SpeakAsync(String.Format("{0} will be up in {1} seconds.", thisTimer.context.ChatMessageComplete, finalLength));
+                synth.SpeakAsync(String.Format("{0} will be up in {1} seconds.", nt.context.ChatMessageComplete, NetworkedTimer.PRE_WARNING));
         }
 
         public bool UseSpeechSynth { get; set; }

@@ -11,6 +11,9 @@ using System.Windows.Threading;
 
 namespace NetJungleTimer
 {
+    public delegate void TimerExpiryHandler(object sender, EventArgs e);
+    public delegate void TimerFinalCountHandler(object sender, EventArgs e);
+
     struct NetworkedTimerContext
     {
         public Image TimerBackgroundImage { get; private set; }
@@ -31,28 +34,30 @@ namespace NetJungleTimer
 
     internal class NetworkedTimer
     {
-
-        MainWindow parent;
         public NetworkedTimerContext context;
 
         Label timerLabel;
         DateTime beganCountdown;
         DateTime endCountdown;
-        bool spinning = false;
+        bool Spinning { get { return this.endCountdown > DateTime.Now; } }
         Brush bgBrush;
         bool triggeredPreWarning = false;
         int flashingLastSecond = 0;
 
+        NetProto currentNetProto;
+
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
         private Color PRE_WARNING_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aaff0000"));
-        private const int PRE_WARNING = 30;
+        public const int PRE_WARNING = 30;
+
+        public event TimerExpiryHandler TimerExpired;
+        public event TimerFinalCountHandler TimerFinalCountdownReached;
 
 
-        internal NetworkedTimer(MainWindow parent, NetworkedTimerContext ntc)
+        internal NetworkedTimer(NetworkedTimerContext ntc, NetProto currentNetProto)
         {
-            this.parent = parent;
             this.context = ntc;
-            parent.keyboardManager.ListenToKey(context.Hotkey);
+            this.currentNetProto = currentNetProto;
 
             var bc = new BrushConverter();
             bgBrush = (Brush)bc.ConvertFrom("#aa000000");
@@ -77,12 +82,8 @@ namespace NetJungleTimer
 
         ~NetworkedTimer()
         {
-            this.parent.GetDispatcher().Invoke(DispatcherPriority.Normal,
-                new Action<Label>(this.RemoveCreatedLabel),
-                timerLabel);
+            timerLabel.Dispatcher.Invoke(DispatcherPriority.Normal, new Action<Label>((Label l) => ((Grid)l.Parent).Children.Remove(l)), timerLabel);
             timerLabel = null;
-
-            this.parent = null;
         }
 
         public void RemoveCreatedLabel(Label timerLabel)
@@ -96,18 +97,16 @@ namespace NetJungleTimer
             timerLabel.Visibility = System.Windows.Visibility.Visible;
             timerLabel.Background = new SolidColorBrush(DEFAULT_BRUSH_COLOR);
             endCountdown = beganCountdown.AddSeconds(time);
-            spinning = true;
             triggeredPreWarning = false;
         }
 
         public void SyncCountdown(int time)
         {
-            Console.WriteLine("SYNCING COUNTDOWN");
             if (time == 0)
                 EndCountdown();
             else
             {
-                if (!spinning)
+                if (!Spinning)
                 {
                     StartCountdown(time);
                     if (time <= PRE_WARNING)
@@ -125,18 +124,17 @@ namespace NetJungleTimer
 
         public void EndCountdown()
         {
-            if (spinning)
-                parent.OnTimerExpiry(this);
-
-            spinning = false;
-            timerLabel.Visibility = System.Windows.Visibility.Hidden;
+            if (Spinning && TimerExpired != null)
+                TimerExpired(this, EventArgs.Empty);
         }
 
         public void UpdateComponent(DateTime now)
         {
-            if (!spinning)
-                return;
+            timerLabel.Visibility = Spinning ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
 
+            if (!Spinning)
+                return;
+            
             if (endCountdown.CompareTo(now) <= 0)
             {
                 EndCountdown();
@@ -149,7 +147,10 @@ namespace NetJungleTimer
             {
                 triggeredPreWarning = true;
                 TriggerPreWarningAnimation();
-                parent.OnTimerFinalCountdown(this, PRE_WARNING);
+
+                if (TimerFinalCountdownReached != null)
+                    TimerFinalCountdownReached(this, EventArgs.Empty);
+
                 flashingLastSecond = (int)Math.Round(remaining.TotalSeconds);
             }
             else if (remaining.TotalSeconds < PRE_WARNING - 1)
@@ -204,7 +205,7 @@ namespace NetJungleTimer
             if (hotKey.Equals(context.Hotkey))
             {
                 // yay
-                parent.NetBroadcast("NETTIMER " + context.NetworkMessage + " " + context.Countdown.ToString());
+                this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " " + context.Countdown.ToString());
                 StartCountdown(context.Countdown);
                 return true;
             }
@@ -213,7 +214,7 @@ namespace NetJungleTimer
 
         internal void SyncData()
         {
-            parent.NetBroadcast("NETTIMER " + context.NetworkMessage + " " + Math.Min(context.Countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
+            this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " " + Math.Min(context.Countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
         }
     }
 }

@@ -8,70 +8,28 @@ using System.Runtime.InteropServices;
 
 namespace NetJungleTimer
 {
-    public class KeyboardManager
+    public delegate void HotKeyPressedEventHandler(object sender, HotKeyPressedEventArgs e);
+
+    public class HotKeyPressedEventArgs : EventArgs
     {
+        public KeyboardManager.KMKey Key;
 
+        public HotKeyPressedEventArgs(KeyboardManager.KMKey ThatKey)
+        {
+            Key = ThatKey;
+        }
+    }
 
-        MainWindow parent;
-        bool ctrlDown = false;
-        bool altDown = false;
-        bool shiftDown = false;
-
+    public class KeyboardManager : IDisposable
+    {
         public class KMKey : IEquatable<KMKey>
         {
-            private bool _ctrlDown = false;
-            private bool _altDown = false;
-            private bool _shiftDown = false;
 
-            private Key _key;
+            public bool CtrlDown { get; private set; }
+            public bool AltDown { get; private set; }
+            public bool ShiftDown { get; private set; }
 
-            public bool CtrlDown
-            {
-                get
-                {
-                    return _ctrlDown;
-                }
-                private set
-                {
-                    _ctrlDown = value;
-                }
-            }
-
-            public bool AltDown
-            {
-                get
-                {
-                    return _altDown;
-                }
-                private set
-                {
-                    _altDown = value;
-                }
-            }
-
-            public bool ShiftDown
-            {
-                get
-                {
-                    return _shiftDown;
-                }
-                private set
-                {
-                    _shiftDown = value;
-                }
-            }
-
-            public Key Key
-            {
-                get
-                {
-                    return _key;
-                }
-                private set
-                {
-                    _key = value;
-                }
-            }
+            public Key Key { get; private set; }
 
             public KMKey(Key datKey, bool datCtrlDown, bool datAltDown, bool datShiftDown)
             {
@@ -135,28 +93,66 @@ namespace NetJungleTimer
             }
         }
 
-        List<KMKey> keysPressed = new List<KMKey>();
-        List<KMKey> runningKeys = new List<KMKey>();
+        bool CtrlDown = false;
+        bool AltDown = false;
+        bool ShiftDown = false;
 
-        IntPtr kbdHook;
+        bool Disposed = false;
+
+        List<KMKey> KeysPressed = new List<KMKey>();
+
+        IntPtr KeyboardHook;
 
         private WindowsApi.User32.HookProc keyPressDelegate = null;
 
-        public KeyboardManager(MainWindow parent)
+        public event HotKeyPressedEventHandler HotKeyPressed;
+
+
+        private static readonly Lazy<KeyboardManager> _instance
+        = new Lazy<KeyboardManager>(() => new KeyboardManager());
+
+        public static KeyboardManager Instance
         {
-            this.parent = parent;
+            get
+            {
+                return _instance.Value;
+            }
+        }
 
-            this.keyPressDelegate = new WindowsApi.User32.HookProc(this.keyboardCallback);
 
-            kbdHook = WindowsApi.User32.SetWindowsHookEx(WindowsApi.User32.HookType.WH_KEYBOARD_LL, this.keyPressDelegate, IntPtr.Zero, 0);
+        private KeyboardManager()
+        {
+            this.keyPressDelegate = new WindowsApi.User32.HookProc(this.KeyboardCallback);
+
+            KeyboardHook = WindowsApi.User32.SetWindowsHookEx(WindowsApi.User32.HookType.WH_KEYBOARD_LL, this.keyPressDelegate, IntPtr.Zero, 0);
         }
 
         ~KeyboardManager()
         {
-            WindowsApi.User32.UnhookWindowsHookEx(this.kbdHook);
+            Dispose(false);
         }
 
-        private int keyboardCallback(int code, IntPtr wParam, [In] WindowsApi.User32.KBDLLHOOKSTRUCT lParam)
+        public void Dispose()
+        {
+            Dispose(true);
+
+            GC.SuppressFinalize(this);
+        }
+
+        public void Dispose(bool disposing)
+        {
+            if (Disposed)
+                return;
+            Disposed = true;
+
+            if (disposing) { }
+
+            WindowsApi.User32.UnhookWindowsHookEx(this.KeyboardHook);
+            this.KeyboardHook = IntPtr.Zero;
+
+        }
+
+        private int KeyboardCallback(int code, IntPtr wParam, [In] WindowsApi.User32.KBDLLHOOKSTRUCT lParam)
         {
             // if it's not a key being pressed
             if (code < 0) // we need to return callnexthookex
@@ -205,13 +201,13 @@ namespace NetJungleTimer
                 switch (datKey)
                 {
                     case 0x10:
-                        shiftDown = isSet;
+                        ShiftDown = isSet;
                         break;
                     case 0x11:
-                        ctrlDown = isSet;
+                        CtrlDown = isSet;
                         break;
                     case 0x12:
-                        altDown = isSet;
+                        AltDown = isSet;
                         break;
                 }
             }
@@ -227,7 +223,7 @@ namespace NetJungleTimer
                 return false;
             else
             {
-                foreach (KMKey kmk in keysPressed)
+                foreach (KMKey kmk in KeysPressed)
                 {
                     if (kmk.Key.Equals(whatKey))
                     {
@@ -236,13 +232,11 @@ namespace NetJungleTimer
                 }
 
                 ResetControlKeys();
-                KMKey akmk = new KMKey(whatKey, ctrlDown, altDown, shiftDown);
-                keysPressed.Add(akmk);
+                KMKey akmk = new KMKey(whatKey, CtrlDown, AltDown, ShiftDown);
+                KeysPressed.Add(akmk);
 
-                if (runningKeys.Contains(akmk))
-                {
-                    return parent.OnHotKeyHandler(akmk);
-                }
+                if (this.HotKeyPressed != null)
+                    this.HotKeyPressed(this, new HotKeyPressedEventArgs(akmk));
                 return false;
             }
         }
@@ -257,23 +251,18 @@ namespace NetJungleTimer
                 return false;
             else
             {
-                KMKey[] keysPressedA = new KMKey[keysPressed.Count()];
-                keysPressed.CopyTo(keysPressedA, 0);
+                KMKey[] keysPressedA = new KMKey[KeysPressed.Count()];
+                KeysPressed.CopyTo(keysPressedA, 0);
                 foreach (KMKey kmk in keysPressedA)
                 {
                     if (kmk.Key.Equals(whatKey))
                     {
-                        keysPressed.Remove(kmk);
+                        KeysPressed.Remove(kmk);
                         break;
                     }
                 }
                 return false;
             }
-        }
-
-        public void ListenToKey(KMKey newKeyKey)
-        {
-            runningKeys.Add(newKeyKey);
         }
 
         public void EnsureNumLockEnabled()
@@ -433,7 +422,7 @@ namespace NetJungleTimer
             WindowsApi.User32.SendInput((uint)preInputSet.Count, preInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
             WindowsApi.User32.SendInput((uint)inputSet.Count, inputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
             WindowsApi.User32.SendInput((uint)postInputSet.Count, postInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
-            
+
         }
 
     }
