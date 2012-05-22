@@ -104,12 +104,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="MockupNetProto.cs" />
-    <Compile Include="INetProto.cs" />
-    <Compile Include="NetworkedTimer.cs" />
+    <Compile Include="Networking\MockupNetProto.cs" />
+    <Compile Include="Networking\INetProto.cs" />
+    <Compile Include="UI\IUIElement.cs" />
+    <Compile Include="UI\NetworkedTimer.cs" />
     <Compile Include="KeyboardManager.cs" />
-    <Compile Include="LiveNetProto.cs" />
-    <Compile Include="Settings.cs" />
+    <Compile Include="Networking\LiveNetProto.cs" />
     <Compile Include="WelcomeWindow.xaml.cs">
       <DependentUpon>WelcomeWindow.xaml</DependentUpon>
     </Compile>

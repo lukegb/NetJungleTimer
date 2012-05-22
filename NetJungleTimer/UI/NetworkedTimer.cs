@@ -9,7 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
-namespace NetJungleTimer
+namespace NetJungleTimer.UI
 {
     public delegate void TimerExpiryHandler(object sender, EventArgs e);
     public delegate void TimerFinalCountHandler(object sender, EventArgs e);
@@ -32,7 +32,7 @@ namespace NetJungleTimer
         }
     }
 
-    internal class NetworkedTimer
+    internal class NetworkedTimer : IUIElement
     {
         public NetworkedTimerContext context;
 
@@ -44,7 +44,7 @@ namespace NetJungleTimer
         bool triggeredPreWarning = false;
         int flashingLastSecond = 0;
 
-        INetProto currentNetProto;
+        Networking.INetProto currentNetProto;
 
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
         private Color PRE_WARNING_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aaff0000"));
@@ -54,7 +54,7 @@ namespace NetJungleTimer
         public event TimerFinalCountHandler TimerFinalCountdownReached;
 
 
-        internal NetworkedTimer(NetworkedTimerContext ntc, INetProto currentNetProto)
+        internal NetworkedTimer(NetworkedTimerContext ntc, Networking.INetProto currentNetProto)
         {
             this.context = ntc;
             this.currentNetProto = currentNetProto;
@@ -212,7 +212,7 @@ namespace NetJungleTimer
             }
         }
 
-        internal bool GotKey(KeyboardManager.KMKey hotKey)
+        public bool GotKey(KeyboardManager.KMKey hotKey)
         {
             KeyboardManager.KMKey cancelKey = (KeyboardManager.KMKey)context.Hotkey.Clone();
             cancelKey.InvertCtrlDown();
@@ -236,7 +236,7 @@ namespace NetJungleTimer
             return false;
         }
 
-        internal void SyncData()
+        public void SyncData()
         {
             this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " " + Math.Min(context.Countdown, Math.Max(0, Math.Round(endCountdown.Subtract(DateTime.Now).TotalSeconds))));
         }

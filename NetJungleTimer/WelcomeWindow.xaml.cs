@@ -13,6 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Deployment.Application;
+using NetJungleTimer.Networking;
+using NetJungleTimer.UI;
 
 namespace NetJungleTimer
 {

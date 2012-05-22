@@ -15,6 +15,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using NetJungleTimer.Networking;
+using NetJungleTimer.UI;
 
 namespace NetJungleTimer
 {
@@ -45,7 +47,8 @@ namespace NetJungleTimer
         IntPtr leagueOfLegendsWindowHndl;
 
         INetProto netJungleProto;
-        NetworkedTimer[] networkedTimers;
+        //UI.NetworkedTimer[] networkedTimers;
+        List<IUIElement> uiElements;
         public KeyboardManager KeyboardManager;
 
         WelcomeWindow welWin;
@@ -113,7 +116,9 @@ namespace NetJungleTimer
                 synth.Dispose();
             synth = null;
 
-            networkedTimers = null; // bye ;D
+            if (uiElements != null)
+                uiElements.Clear();
+            uiElements = null; // bye ;D
 
             if (netJungleProto != null)
                 netJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
@@ -126,10 +131,12 @@ namespace NetJungleTimer
 
         protected void ResetState()
         {
-            networkedTimers = null;
+            if (uiElements != null)
+                uiElements.Clear();
+            uiElements = null;
 
             // let's go
-            networkedTimers = new NetworkedTimer[6]
+            uiElements = new List<IUIElement>
             {
                 new NetworkedTimer(new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"), this.netJungleProto),
                 new NetworkedTimer(new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"), this.netJungleProto),
@@ -139,8 +146,11 @@ namespace NetJungleTimer
                 new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto)
             };
 
-            foreach (NetworkedTimer nt in networkedTimers)
+            foreach (IUIElement iui in uiElements)
             {
+                if (!(iui is NetworkedTimer))
+                    continue;
+                var nt = iui as NetworkedTimer;
                 nt.TimerExpired += new TimerExpiryHandler(OnTimerExpiry);
                 nt.TimerFinalCountdownReached += new TimerFinalCountHandler(OnTimerFinalCountdown);
             }
@@ -219,9 +229,9 @@ namespace NetJungleTimer
 
             masterLastResyncedData = DateTime.Now;
 
-            foreach (NetworkedTimer jt in networkedTimers)
+            foreach (IUIElement uie in uiElements)
             {
-                jt.SyncData();
+                uie.SyncData();
             }
         }
 
@@ -231,9 +241,9 @@ namespace NetJungleTimer
                 return;
 
             DateTime now = DateTime.Now;
-            foreach (NetworkedTimer jt in networkedTimers)
+            foreach (IUIElement uie in uiElements)
             {
-                jt.UpdateComponent(now);
+                uie.UpdateComponent(now);
             }
         }
 

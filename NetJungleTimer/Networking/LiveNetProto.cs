@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Threading;
 
-namespace NetJungleTimer
+namespace NetJungleTimer.Networking
 {
     public class LiveNetProto : INetProto
     {
