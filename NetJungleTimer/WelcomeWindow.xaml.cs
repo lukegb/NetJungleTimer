@@ -24,9 +24,17 @@ namespace NetJungleTimer
         private Mutex m;
         private MainWindow mw;
 
-        private NetProto netJungleProto;
+        private NetProto NetJungleProto;
 
-        private bool connected = false;
+        private bool RunningMain = false;
+
+        private bool UseLocalMode
+        {
+            get
+            {
+                return (LocalMode.IsChecked.HasValue && (bool)LocalMode.IsChecked);
+            }
+        }
 
         public WelcomeWindow()
         {
@@ -101,112 +109,143 @@ namespace NetJungleTimer
 
         private void SetFormFieldsEnabled(bool GloballyEnabled)
         {
-            SetFormFieldsEnabled(GloballyEnabled, GloballyEnabled);
+            SetFormFieldsEnabled(GloballyEnabled, GloballyEnabled, GloballyEnabled);
         }
 
         private void SetFormFieldsEnabled(bool GloballyEnabled, bool ButtonEnabled)
         {
-            username.IsEnabled = GloballyEnabled;
-            serverHost.IsEnabled = GloballyEnabled;
-            gameName.IsEnabled = GloballyEnabled;
-            speechSynth.IsEnabled = GloballyEnabled;
+            SetFormFieldsEnabled(GloballyEnabled, ButtonEnabled, GloballyEnabled);
+        }
 
-            actionButton.IsEnabled = ButtonEnabled;
+        private void SetFormFieldsEnabled(bool GloballyEnabled, bool ButtonEnabled, bool NetworkingEnabled)
+        {
+            UserName.IsEnabled = NetworkingEnabled;
+            ServerHost.IsEnabled = NetworkingEnabled;
+            GameName.IsEnabled = NetworkingEnabled;
+
+            LocalMode.IsEnabled = GloballyEnabled;
+            SpeechSynth.IsEnabled = GloballyEnabled;
+
+            ActionButton.IsEnabled = ButtonEnabled;
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            gameName.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
-            serverHost.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
-            username.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
+            GameName.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
+            ServerHost.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
+            UserName.SetCurrentValue(BackgroundProperty, DependencyProperty.UnsetValue);
 
             // do some validation
             int fieldsMustSpecify = 0;
-            if (gameName.Text.Length == 0)
+            if (!UseLocalMode)
             {
-                gameName.Background = new SolidColorBrush(Colors.PaleVioletRed);
-                gameName.Focus();
-                SetStatusLabel("You must specify a NetJungle game lobby.");
-                fieldsMustSpecify++;
-            }
-            if (serverHost.Text.Length == 0)
-            {
-                serverHost.Background = new SolidColorBrush(Colors.PaleVioletRed);
-                serverHost.Focus();
-                SetStatusLabel("You must specify a NetJungle server.");
-                fieldsMustSpecify++;
-            }
-            if (username.Text.Length == 0)
-            {
-                username.Background = new SolidColorBrush(Colors.PaleVioletRed);
-                username.Focus();
-                SetStatusLabel("You must specify a username.");
-                fieldsMustSpecify++;
+                if (GameName.Text.Length == 0)
+                {
+                    GameName.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                    GameName.Focus();
+                    SetStatusLabel("You must specify a NetJungle game lobby.");
+                    fieldsMustSpecify++;
+                }
+                if (ServerHost.Text.Length == 0)
+                {
+                    ServerHost.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                    ServerHost.Focus();
+                    SetStatusLabel("You must specify a NetJungle server.");
+                    fieldsMustSpecify++;
+                }
+                if (UserName.Text.Length == 0)
+                {
+                    UserName.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                    UserName.Focus();
+                    SetStatusLabel("You must specify a username.");
+                    fieldsMustSpecify++;
+                }
             }
             if (fieldsMustSpecify > 1)
                 SetStatusLabel("You must fill in all the form fields.");
             if (fieldsMustSpecify != 0)
                 return;
 
-            if (!connected)
+            if (!RunningMain)
             {
-                SetStatusLabel("Connecting...");
-                this.Connect();
+                if (UseLocalMode)
+                    SetStatusLabel("Running...");
+                else
+                    SetStatusLabel("Connecting...");
+
                 SetFormFieldsEnabled(false);
+
+                this.StartMain();
             }
             else
             {
-                SetStatusLabel("Disconnecting...");
-                connected = false;
+                if (UseLocalMode)
+                    SetStatusLabel("Closing...");
+                else
+                    SetStatusLabel("Disconnecting...");
+
+                RunningMain = false;
                 App.Current.MainWindow = this;
                 mw.Disconnect();
                 mw.GoAway();
                 mw = null;
-                actionButton.Content = "Connect";
+
+                ActionButton.Content = (UseLocalMode) ? "Start" : "Connect";
                 SetFormFieldsEnabled(true);
                 SetStatusLabel("Ready.");
             }
         }
 
 
-        private void Connect()
+        private void StartMain()
         {
+            if (!UseLocalMode)
+            {
 
-            String[] remote_server_port_bits = serverHost.Text.Split(new char[] { ':' }, 2);
-            String RemoteServer = remote_server_port_bits[0];
-            int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
-            String RemoteRoom = gameName.Text;
+                String[] remote_server_port_bits = ServerHost.Text.Split(new char[] { ':' }, 2);
+                String RemoteServer = remote_server_port_bits[0];
+                int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
+                String RemoteRoom = GameName.Text;
 
-            netJungleProto = new NetProto((NetProtoUI)this, RemoteServer, RemotePort, username.Text, RemoteRoom);
-            netJungleProto.Go();
+                NetJungleProto = new LiveNetProto((NetProtoUI)this, RemoteServer, RemotePort, UserName.Text, RemoteRoom);
+                NetJungleProto.Go();
+            }
+            else
+            {
+                NetJungleProto = new MockupNetProto();
+                this.OnNetworkMessage("&CONN"); // mock a connected message
+            }
         }
 
 
         public void OnNetworkMessage(String message)
         {
-            Console.WriteLine(message);
             if (message == "&CONN")
             {
-                mw = new MainWindow(this.m, this, this.netJungleProto);
-                mw.UseSpeechSynth = (bool)speechSynth.IsChecked;
+                mw = new MainWindow(this.m, this, this.NetJungleProto);
+                mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
                 App.Current.MainWindow = mw;
-                netJungleProto.parent = (NetProtoUI)mw;
+                this.NetJungleProto.Parent = (NetProtoUI)mw;
                 mw.Show();
 
                 SaveLastConnectedSettings();
-                SetStatusLabel("Connected! The timer UI should now appear in game.\nEnsure you are in BORDERLESS or WINDOWED mode.");
+                SetStatusLabel("Ready! The timer UI should now appear in game.\nEnsure you are in BORDERLESS or WINDOWED mode.");
 
-                connected = true;
+                RunningMain = true;
                 // woo
-                actionButton.Content = "Disconnect";
+
+                ActionButton.Content = UseLocalMode ? "Stop" : "Disconnect";
                 SetFormFieldsEnabled(false, true);
             }
             else if (message == "!RECONNECT 4")
             {
-                connected = false;
+                RunningMain = false;
+
+                NetJungleProto.Stop();
+                NetJungleProto = null;
 
                 SetStatusLabel("Error: couldn't connect to server");
-                actionButton.Content = "Connect";
+                ActionButton.Content = "Connect";
                 SetFormFieldsEnabled(true, true);
 
             }
@@ -214,20 +253,20 @@ namespace NetJungleTimer
 
         public void SaveLastConnectedSettings()
         {
-            NetJungleTimer.Properties.Settings.Default.username = username.Text;
-            NetJungleTimer.Properties.Settings.Default.hostname = serverHost.Text;
-            NetJungleTimer.Properties.Settings.Default.roomName = gameName.Text;
-            NetJungleTimer.Properties.Settings.Default.useSpeechSynth = (bool)speechSynth.IsChecked;
+            NetJungleTimer.Properties.Settings.Default.username = UserName.Text;
+            NetJungleTimer.Properties.Settings.Default.hostname = ServerHost.Text;
+            NetJungleTimer.Properties.Settings.Default.roomName = GameName.Text;
+            NetJungleTimer.Properties.Settings.Default.useSpeechSynth = (bool)SpeechSynth.IsChecked;
             NetJungleTimer.Properties.Settings.Default.Save();
         }
 
         public void LoadLastConnectedSettings()
         {
             NetJungleTimer.Properties.Settings.Default.Reload();
-            username.Text = NetJungleTimer.Properties.Settings.Default.username;
-            serverHost.Text = NetJungleTimer.Properties.Settings.Default.hostname;
-            gameName.Text = NetJungleTimer.Properties.Settings.Default.roomName;
-            speechSynth.IsChecked = NetJungleTimer.Properties.Settings.Default.useSpeechSynth;
+            UserName.Text = NetJungleTimer.Properties.Settings.Default.username;
+            ServerHost.Text = NetJungleTimer.Properties.Settings.Default.hostname;
+            GameName.Text = NetJungleTimer.Properties.Settings.Default.roomName;
+            SpeechSynth.IsChecked = NetJungleTimer.Properties.Settings.Default.useSpeechSynth;
         }
 
         public Dispatcher GetDispatcher()
@@ -250,6 +289,16 @@ namespace NetJungleTimer
         public void SetStatusLabel(String newText)
         {
             statusLabel.Content = String.Format("Status: {0}", newText);
+        }
+
+        private void LocalMode_Click(object sender, RoutedEventArgs e)
+        {
+            SetFormFieldsEnabled(true, true, !UseLocalMode);
+
+            if (UseLocalMode)
+                ActionButton.Content = "Start";
+            else
+                ActionButton.Content = "Connect";
         }
     }
 }

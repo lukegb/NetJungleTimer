@@ -17,16 +17,19 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Label Content="Username" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0"/>
-            <TextBox x:Name="username" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="5,6,5,7" TabIndex="1"/>
+            <TextBox x:Name="UserName" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="5,6,5,7" TabIndex="1"/>
             <Label Content="Server name" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1"/>
-            <TextBox x:Name="serverHost" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="guy.deserves.a.hug.at.lukegb.com:9446" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Margin="5,6,5,7" TabIndex="2"/>
+            <TextBox x:Name="ServerHost" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="guy.deserves.a.hug.at.lukegb.com:9446" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Margin="5,6,5,7" TabIndex="2"/>
             <Label Content="Game name" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2"/>
-            <TextBox x:Name="gameName" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="Default" VerticalAlignment="Center" Grid.Column="1" Grid.Row="2" Width="Auto" Margin="5,6,5,7" TabIndex="3"/>
+            <TextBox x:Name="GameName" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="Default" VerticalAlignment="Center" Grid.Column="1" Grid.Row="2" Width="Auto" Margin="5,6,5,7" TabIndex="3"/>
             <Label Content="Speech synth?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="3"/>
-            <Button x:Name="actionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="4" d:LayoutOverrides="Height" TabIndex="4" Click="Button_Click_1" IsDefault="True"/>
-            <CheckBox x:Name="speechSynth" Content="" Grid.Column="1" HorizontalAlignment="Left" Grid.Row="3" VerticalAlignment="Center" Margin="5,0,0,0" IsChecked="True"/>
+            <CheckBox x:Name="SpeechSynth" Content="" Grid.Column="1" HorizontalAlignment="Left" Grid.Row="3" VerticalAlignment="Center" Margin="5,0,0,0" IsChecked="True"/>
+            <Label Content="Local mode?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4"/>
+            <CheckBox x:Name="LocalMode" Content="" Grid.Column="1" HorizontalAlignment="Left" Grid.Row="4" VerticalAlignment="Center" Margin="5,0,0,0" Click="LocalMode_Click"/>
+            <Button x:Name="ActionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="5" d:LayoutOverrides="Height" TabIndex="4" Click="Button_Click_1" IsDefault="True"/>
 
         </Grid>
         <Label x:Name="statusLabel" Content="Status: Ready" HorizontalAlignment="Center" Margin="0,0,0,20" VerticalAlignment="Bottom"/>
