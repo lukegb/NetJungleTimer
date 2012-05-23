@@ -107,7 +107,7 @@ namespace NetJungleTimer
         private void BeginUpdate()
         {
             ApplicationDeployment ad = ApplicationDeployment.CurrentDeployment;
-            ad.UpdateCompleted += new System.ComponentModel.AsyncCompletedEventHandler(UpdateCompleted);
+            //ad.UpdateCompleted += new System.ComponentModel.AsyncCompletedEventHandler(UpdateCompleted);
             ad.UpdateProgressChanged += new DeploymentProgressChangedEventHandler(UpdateProgressChanged);
             ad.UpdateAsync();
         }
@@ -120,6 +120,8 @@ namespace NetJungleTimer
 
         private void UpdateProgressChanged(object sender, DeploymentProgressChangedEventArgs e)
         {
+            if (e.BytesCompleted == e.BytesTotal)
+                UpdateCompleted(sender, null);
             SetStatusLabel(String.Format("Updating... {0:D}%", e.ProgressPercentage));
         }
 
