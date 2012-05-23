@@ -1,0 +1,60 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="NetJungleTimer.WelcomeWindow"
+        Title="Welcome to NetJungler" Height="420" Width="420" Closing="Window_Closing_1" ResizeMode="CanMinimize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="90" />
+            <RowDefinition />
+            <RowDefinition Height="60" />
+        </Grid.RowDefinitions>
+        <Label Content="Welcome to" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,15,0,0" Grid.Row="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Label Content="Net Jungler!" HorizontalAlignment="Center" Margin="0,40,0,0" VerticalAlignment="Top" FontSize="22" FontWeight="Bold" Grid.Row="0"/>
+        <Grid Grid.Row="1" Margin="10,10,10,10" d:LayoutOverrides="Width">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Label Content="Username" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0"/>
+            <TextBox x:Name="UserName" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="5,6,5,7" TabIndex="1" />
+            
+            <Label Content="Server name" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="1"/>
+            <TextBox x:Name="ServerHost" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="guy.deserves.a.hug.at.lukegb.com:9446" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Margin="5,6,5,7" TabIndex="3" />
+
+            <Label Content="Server password" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2"/>
+            <PasswordBox x:Name="ServerPassword" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="2" Margin="5,6,5,7" TabIndex="4" Password="password"/>
+
+            <Label Content="Game name" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0" Grid.Row="3"/>
+            <TextBox x:Name="GameName" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="Default" VerticalAlignment="Center" Grid.Column="1" Grid.Row="3" Width="Auto" Margin="5,6,5,7" TabIndex="5"/>
+
+            <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Label Content="Speech synth?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0"/>
+                <CheckBox x:Name="SpeechSynth" Content="" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" IsChecked="True" TabIndex="6"/>
+
+                <Label Content="Local mode?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="2" />
+                <CheckBox x:Name="LocalMode" Content="" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Click="LocalMode_Click" TabIndex="7"/>
+            </Grid>
+            
+            <Button x:Name="ActionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="5" d:LayoutOverrides="Height" TabIndex="8" Click="Button_Click_1" IsDefault="True"/>
+
+        </Grid>
+        <Label x:Name="statusLabel" Content="Status: Ready" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Label x:Name="versionLabel" Content="VERSION INFO" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0"/>
+
+    </Grid>
+</Window>
