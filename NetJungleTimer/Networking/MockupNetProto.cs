@@ -21,6 +21,10 @@ namespace NetJungleTimer.Networking
 
         public void SendMessage(string message) { }
 
-        public event NewNetworkMessageHandler NewNetworkMessage;
+        public event NewNetworkMessageHandler NewNetworkMessage
+        {
+            add { }
+            remove { }
+        }
     }
 }

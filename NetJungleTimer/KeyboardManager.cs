@@ -322,11 +322,12 @@ namespace NetJungleTimer
 
         public void SendAlliedChatMessage(String whatMessage)
         {
-            SendKeyStrokes(String.Format("\r{0}\r", whatMessage));
+            SendKeyStrokes(String.Format("\n{0}\n", whatMessage));
         }
 
-        private WindowsApi.User32.INPUT _GenerateKeyPress(WindowsApi.User32.VirtualKeyShort datKey, bool pressDown)
+        private WindowsApi.User32.INPUT _GenerateKeyPress(NetJungleTimer.DXScanCode datKey, bool pressDown)
         {
+            Console.WriteLine("PRESSING KEY " + datKey);
             return new WindowsApi.User32.INPUT()
             {
                 type = (int)WindowsApi.User32.INPUT_KEYBOARD,
@@ -334,9 +335,9 @@ namespace NetJungleTimer
                 {
                     ki = new WindowsApi.User32.KEYBDINPUT
                     {
-                        wScan = 0,
-                        wVk = (ushort)datKey,
-                        dwFlags = (ushort)(pressDown ? WindowsApi.User32.KEYEVENTF.NONE : WindowsApi.User32.KEYEVENTF.KEYUP),
+                        wScan = (ushort)datKey,
+                        wVk = 0,
+                        dwFlags = (ushort)(WindowsApi.User32.KEYEVENTF.SCANCODE | (pressDown ? WindowsApi.User32.KEYEVENTF.NONE : WindowsApi.User32.KEYEVENTF.KEYUP)),
                         dwExtraInfo = WindowsApi.User32.GetMessageExtraInfo(),
                         time = 0
                     }
@@ -365,75 +366,72 @@ namespace NetJungleTimer
 
         private void SendKeyStrokes(String whatStrokes)
         {
-            var preInputSet = new List<WindowsApi.User32.INPUT>(); // run first
-            var inputSet = new List<WindowsApi.User32.INPUT>(); // actual input
-            var postInputSet = new List<WindowsApi.User32.INPUT>(); // run after
+                var preInputSet = new List<WindowsApi.User32.INPUT>(); // run first
+                var inputSet = new List<WindowsApi.User32.INPUT>(); // actual input
+                var postInputSet = new List<WindowsApi.User32.INPUT>(); // run after
 
-            if (Console.CapsLock)
-            {
-                preInputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.CAPITAL, true));
-                preInputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.CAPITAL, false));
-                postInputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.CAPITAL, true));
-                postInputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.CAPITAL, false));
-            }
-
-            var respDict = new Dictionary<Key, WindowsApi.User32.VirtualKeyShort>
-            {
-                {Key.LeftShift, WindowsApi.User32.VirtualKeyShort.LSHIFT},
-                {Key.RightShift, WindowsApi.User32.VirtualKeyShort.RSHIFT},
-                {Key.LeftCtrl, WindowsApi.User32.VirtualKeyShort.LCONTROL},
-                {Key.RightCtrl, WindowsApi.User32.VirtualKeyShort.RCONTROL},
-                {Key.LeftAlt, WindowsApi.User32.VirtualKeyShort.LMENU},
-                {Key.RightAlt, WindowsApi.User32.VirtualKeyShort.RMENU},
-            };
-
-            foreach (KeyValuePair<Key, WindowsApi.User32.VirtualKeyShort> resp in respDict)
-            {
-                if (Keyboard.IsKeyDown(resp.Key))
+                if (Console.CapsLock)
                 {
-                    preInputSet.Add(_GenerateKeyPress(resp.Value, false));
-                    postInputSet.Add(_GenerateKeyPress(resp.Value, true));
+                    preInputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.Capital, true));
+                    preInputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.Capital, false));
+                    postInputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.Capital, true));
+                    postInputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.Capital, false));
                 }
-            }
 
-            foreach (char datChar in whatStrokes)
-            {
-                switch (datChar)
+                var respDict = new Dictionary<Key, NetJungleTimer.DXScanCode>
                 {
-                    case '\r':
-                        inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.RETURN, true));
-                        inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.RETURN, false));
-                        break;
-                    default:
-                        /*keyDownEvent = _GenerateKeyPressUnicode(datChar, true);
-                        keyUpEvent = _GenerateKeyPressUnicode(datChar, false);*/
-                        var virtKey = WindowsApi.GetVirtualKey(datChar);
-                        if (virtKey.ShiftPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LSHIFT, true));
-                        if (virtKey.CtrlPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LCONTROL, true));
-                        if (virtKey.AltPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LMENU, true));
+                    {Key.LeftShift, NetJungleTimer.DXScanCode.LeftShift},
+                    {Key.RightShift, NetJungleTimer.DXScanCode.RightShift},
+                    {Key.LeftCtrl, NetJungleTimer.DXScanCode.LeftControl},
+                    {Key.RightCtrl, NetJungleTimer.DXScanCode.RightControl},
+                    {Key.LeftAlt, NetJungleTimer.DXScanCode.LeftMenu},
+                    {Key.RightAlt, NetJungleTimer.DXScanCode.RightMenu},
+                };
 
-                        inputSet.Add(_GenerateKeyPress((WindowsApi.User32.VirtualKeyShort)virtKey.KeyCode, true));
-                        inputSet.Add(_GenerateKeyPress((WindowsApi.User32.VirtualKeyShort)virtKey.KeyCode, false));
-
-                        if (virtKey.AltPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LMENU, false));
-                        if (virtKey.CtrlPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LCONTROL, false));
-                        if (virtKey.ShiftPressed)
-                            inputSet.Add(_GenerateKeyPress(WindowsApi.User32.VirtualKeyShort.LSHIFT, false));
-                        break;
+                foreach (KeyValuePair<Key, NetJungleTimer.DXScanCode> resp in respDict)
+                {
+                    if (Keyboard.IsKeyDown(resp.Key))
+                    {
+                        preInputSet.Add(_GenerateKeyPress(resp.Value, false));
+                        postInputSet.Add(_GenerateKeyPress(resp.Value, true));
+                    }
                 }
-            }
 
-            // send sets
-            WindowsApi.User32.SendInput((uint)preInputSet.Count, preInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
-            WindowsApi.User32.SendInput((uint)inputSet.Count, inputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
-            WindowsApi.User32.SendInput((uint)postInputSet.Count, postInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
+                foreach (char datChar in whatStrokes)
+                {
+                    var virtKey = DXScanCodeHelper.GetDXScanCode(datChar);
+                    if (virtKey.ShiftPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftShift, true));
+                    if (virtKey.CtrlPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftControl, true));
+                    if (virtKey.AltPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftMenu, true));
+
+                    inputSet.Add(_GenerateKeyPress((NetJungleTimer.DXScanCode)virtKey.KeyCode, true));
+                    inputSet.Add(_GenerateKeyPress((NetJungleTimer.DXScanCode)virtKey.KeyCode, false));
+
+                    if (virtKey.AltPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftMenu, false));
+                    if (virtKey.CtrlPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftControl, false));
+                    if (virtKey.ShiftPressed)
+                        inputSet.Add(_GenerateKeyPress(NetJungleTimer.DXScanCode.LeftShift, false));
+                }
+
+                // send sets
+                //WindowsApi.User32.SendInput((uint)preInputSet.Count, preInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
+                var finalInputSet = new List<WindowsApi.User32.INPUT>(); // run after
+                finalInputSet.AddRange(preInputSet);
+                finalInputSet.AddRange(inputSet);
+                finalInputSet.AddRange(postInputSet);
+                foreach (WindowsApi.User32.INPUT inp in finalInputSet)
+                {
+                    WindowsApi.User32.SendInput(1, new WindowsApi.User32.INPUT[] { inp }, Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
+                    Thread.Sleep(20);
+                }
+                //WindowsApi.User32.SendInput((uint)inputSet.Count, inputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
+                //WindowsApi.User32.SendInput((uint)postInputSet.Count, postInputSet.ToArray(), Marshal.SizeOf(typeof(WindowsApi.User32.INPUT)));
 
         }
-
     }
 }

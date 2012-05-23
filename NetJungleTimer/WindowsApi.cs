@@ -1158,8 +1158,8 @@ namespace NetJungleTimer
         {
             Rect windowDims = GetWindowDims(leagueOfLegendsWindowHndl);
 
-            int newPosX = (int)((System.Windows.SystemParameters.FullPrimaryScreenWidth / 2) - (windowDims.Width / 2));
-            int newPosY = (int)((System.Windows.SystemParameters.FullPrimaryScreenHeight / 2) - (windowDims.Height / 2));
+            int newPosX = (int)((System.Windows.SystemParameters.PrimaryScreenWidth / 2) - (windowDims.Width / 2));
+            int newPosY = (int)((System.Windows.SystemParameters.PrimaryScreenHeight / 2) - (windowDims.Height / 2));
 
             User32.MoveWindow(leagueOfLegendsWindowHndl, newPosX, newPosY, (int)windowDims.Width, (int)windowDims.Height, true);
         }

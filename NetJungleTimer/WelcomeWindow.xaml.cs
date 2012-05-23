@@ -225,7 +225,6 @@ namespace NetJungleTimer
         {
             if (!UseLocalMode)
             {
-
                 String[] remote_server_port_bits = ServerHost.Text.Split(new char[] { ':' }, 2);
                 String RemoteServer = remote_server_port_bits[0];
                 int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
@@ -259,7 +258,7 @@ namespace NetJungleTimer
             else if (message == "&LOGGEDIN")
             {
                 mw = new MainWindow(this.m, this, this.NetJungleProto);
-                mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
+                TextToSpeech.Instance.Enabled = mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
                 App.Current.MainWindow = mw;
                 NetJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
                 mw.Show();

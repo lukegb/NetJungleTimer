@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Speech.Synthesis;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -57,9 +56,7 @@ namespace NetJungleTimer
 
         DateTime masterLastResyncedData;
 
-        SpeechSynthesizer synth = new SpeechSynthesizer();
-
-        private bool showHideWindow = false;
+        private bool alwaysShowWindow = false;
         int konamiCodeSteps = 0;
         Key[] konamiCode = new Key[] {
             Key.Up,
@@ -112,10 +109,6 @@ namespace NetJungleTimer
                 processingTimer.Stop();
             processingTimer = null;
 
-            if (synth != null)
-                synth.Dispose();
-            synth = null;
-
             if (uiElements != null)
                 uiElements.Clear();
             uiElements = null; // bye ;D
@@ -150,9 +143,11 @@ namespace NetJungleTimer
             {
                 if (!(iui is NetworkedTimer))
                     continue;
+
                 var nt = iui as NetworkedTimer;
                 nt.TimerExpired += new TimerExpiryHandler(OnTimerExpiry);
                 nt.TimerFinalCountdownReached += new TimerFinalCountHandler(OnTimerFinalCountdown);
+                TextToSpeech.Instance.PrecacheTimer(nt);
             }
         }
 
@@ -168,7 +163,7 @@ namespace NetJungleTimer
 
         private void Window_Loaded_1(object sender, RoutedEventArgs e)
         {
-            if (!this.showHideWindow)
+            if (!this.alwaysShowWindow)
                 this.Visibility = Visibility.Hidden;
 
             uiTimer = new DispatcherTimer();
@@ -291,7 +286,7 @@ namespace NetJungleTimer
                     this.Width = leagueOfLegendsWindowDimensions.Width - leftMod - rightMod;
                     this.Height = leagueOfLegendsWindowDimensions.Height - topMod - botMod;
 
-                    if (!this.showHideWindow)
+                    if (!this.alwaysShowWindow)
                         this.Visibility = Visibility.Visible;
 
                     leagueOfLegendsWindowHndl = tempHandle; // we found it <3
@@ -299,7 +294,7 @@ namespace NetJungleTimer
             }
             else
             {
-                if (!this.showHideWindow)
+                if (!this.alwaysShowWindow)
                     this.Visibility = Visibility.Hidden;
             }
 
@@ -350,6 +345,13 @@ namespace NetJungleTimer
                     return false;
                 }
             }
+            else if (key.Equals(new KeyboardManager.KMKey(Key.F10, true, true, false)))
+            {
+                if (leagueOfLegendsWindowHndl != IntPtr.Zero) // if we've already FOUND the LoL window...
+                {
+                    KeyboardManager.Instance.SendAlliedChatMessage("test");
+                }
+            }
 
             // konami code check
             if (konamiCode[konamiCodeSteps] == key.Key)
@@ -357,7 +359,7 @@ namespace NetJungleTimer
                 if (++konamiCodeSteps == konamiCode.Length)
                 {
                     konamiCodeSteps = 0;
-                    showHideWindow = !showHideWindow;
+                    alwaysShowWindow = !alwaysShowWindow;
                     connectionStatusText.Content = "KONAMI CODE HACKTIVATED";
                     this.Visibility = Visibility.Visible;
                     this.Top = 0;
@@ -403,17 +405,11 @@ namespace NetJungleTimer
         internal void OnTimerExpiry(object sender, EventArgs e)
         {
             NetworkedTimer nt = sender as NetworkedTimer;
-
-            if (this.UseSpeechSynth)
-                synth.SpeakAsync(String.Format("{0}'s up.", nt.context.ChatMessageComplete));
         }
 
         internal void OnTimerFinalCountdown(object sender, EventArgs e)
         {
             NetworkedTimer nt = sender as NetworkedTimer;
-
-            if (this.UseSpeechSynth)
-                synth.SpeakAsync(String.Format("{0} will be up in {1} seconds.", nt.context.ChatMessageComplete, NetworkedTimer.PRE_WARNING));
         }
 
         public bool UseSpeechSynth { get; set; }

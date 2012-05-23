@@ -44,6 +44,11 @@ namespace NetJungleTimer.UI
         bool triggeredPreWarning = false;
         int flashingLastSecond = 0;
 
+        bool triggeredPreWarningTts = false;
+        bool triggeredEndWarningTts = false;
+        TimeSpan preWarningTtsAdvance;
+        TimeSpan endWarningTtsAdvance;
+
         Networking.INetProto currentNetProto;
 
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
@@ -98,6 +103,11 @@ namespace NetJungleTimer.UI
             timerLabel.Background = new SolidColorBrush(DEFAULT_BRUSH_COLOR);
             endCountdown = beganCountdown.AddSeconds(time);
             triggeredPreWarning = false;
+
+            triggeredPreWarningTts = false;
+            triggeredEndWarningTts = false;
+            preWarningTtsAdvance = TextToSpeech.Instance.TimerExpiryPreTime(this);
+            endWarningTtsAdvance = TextToSpeech.Instance.TimerFinalCountdownPreTime(this);
         }
 
         public void SyncCountdown(int time)
@@ -167,6 +177,18 @@ namespace NetJungleTimer.UI
                     }
                     flashingLastSecond = (int)remaining.TotalSeconds;
                 }
+            }
+
+            if (!triggeredPreWarningTts && remaining.TotalSeconds < (preWarningTtsAdvance.TotalSeconds + PRE_WARNING))
+            {
+                TextToSpeech.Instance.TellTimerFinalCountdown(this);
+                triggeredPreWarningTts = true;
+            }
+
+            if (!triggeredEndWarningTts && remaining.TotalSeconds < endWarningTtsAdvance.TotalSeconds)
+            {
+                TextToSpeech.Instance.TellTimerExpiry(this);
+                triggeredEndWarningTts = true;
             }
 
             timerLabel.Content = Math.Round(remaining.TotalSeconds).ToString();
