@@ -30,8 +30,8 @@
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>index.html</WebPage>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>4</ApplicationRevision>
-    <ApplicationVersion>2.2.0.%2a</ApplicationVersion>
+    <ApplicationRevision>3</ApplicationRevision>
+    <ApplicationVersion>2.5.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -57,10 +57,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>9541B63E435923174B37E37F33CFD8C0B87C626B</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>E8724B9CF4D72E4076E8729AA51152F73BC9002B</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>SigningKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>
+    </ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -72,13 +73,16 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>SigningKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>SigningKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <PropertyGroup>
     <TargetZone>Internet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestTimestampUrl>http://time.certum.pl/</ManifestTimestampUrl>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="NAudio, Version=1.5.4.0, Culture=neutral, processorArchitecture=MSIL">
@@ -113,6 +117,7 @@
     <Compile Include="Networking\INetProto.cs" />
     <Compile Include="TextToSpeech.cs" />
     <Compile Include="UI\IUIElement.cs" />
+    <Compile Include="UI\MuseBotNP.cs" />
     <Compile Include="UI\NetworkedTimer.cs" />
     <Compile Include="KeyboardManager.cs" />
     <Compile Include="Networking\LiveNetProto.cs" />
@@ -163,7 +168,7 @@
       <SubType>Designer</SubType>
     </None>
     <AppDesigner Include="Properties\" />
-    <None Include="SigningKey.pfx" />
+    <None Include="SigningKey.snk" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="images\" />
@@ -206,6 +211,11 @@
     <None Include="NAudio.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>call "$(DevEnvDir)..\Tools\vsvars32.bat"
+signtool.exe sign /a "$(TargetPath)"
+signtool.exe timestamp /t http://time.certum.pl/ "$(TargetPath)"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

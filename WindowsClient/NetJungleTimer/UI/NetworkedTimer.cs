@@ -49,6 +49,9 @@ namespace NetJungleTimer.UI
         TimeSpan preWarningTtsAdvance;
         TimeSpan endWarningTtsAdvance;
 
+        private int _timingOffset = 0;
+        public int TimingOffset { get { return _timingOffset; } set { _timingOffset = (int)value; } }
+
         Networking.INetProto currentNetProto;
 
         private Color DEFAULT_BRUSH_COLOR = (Color)((new ColorConverter()).ConvertFrom("#aa000000"));
@@ -238,13 +241,14 @@ namespace NetJungleTimer.UI
         {
             KeyboardManager.KMKey cancelKey = (KeyboardManager.KMKey)context.Hotkey.Clone();
             cancelKey.InvertCtrlDown();
-            
+
+            int thisCountdown = context.Countdown - TimingOffset;
 
             if (hotKey.Equals(context.Hotkey))
             {
                 // yay
-                this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " " + context.Countdown.ToString());
-                StartCountdown(context.Countdown);
+                this.currentNetProto.SendMessage("NETTIMER " + context.NetworkMessage + " " + thisCountdown.ToString());
+                StartCountdown(thisCountdown);
                 return true;
             }
             else if (hotKey.Equals(cancelKey))

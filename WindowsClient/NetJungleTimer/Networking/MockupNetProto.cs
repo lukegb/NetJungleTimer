@@ -15,6 +15,14 @@ namespace NetJungleTimer.Networking
             }
         }
 
+        public bool Connected
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public void Go() { }
 
         public void Stop() { }

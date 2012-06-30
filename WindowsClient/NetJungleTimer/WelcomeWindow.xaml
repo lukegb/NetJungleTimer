@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="NetJungleTimer.WelcomeWindow"
         Title="Welcome to NetJungler" Height="420" Width="420" Closing="Window_Closing_1" ResizeMode="CanMinimize">
-    <Grid>
+    <Grid Margin="0,0,0,-45">
         <Grid.RowDefinitions>
             <RowDefinition Height="90" />
             <RowDefinition />
@@ -17,6 +17,7 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
@@ -49,8 +50,18 @@
                 <Label Content="Local mode?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="2" />
                 <CheckBox x:Name="LocalMode" Content="" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Click="LocalMode_Click" TabIndex="7"/>
             </Grid>
+            <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition Width="100"></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Label Content="Spectator mode?" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Center" Grid.Column="0"/>
+                <CheckBox x:Name="SpectatorMode" Content="" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" IsChecked="False" TabIndex="6"/>
+            </Grid>
             
-            <Button x:Name="ActionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="5" d:LayoutOverrides="Height" TabIndex="8" Click="Button_Click_1" IsDefault="True"/>
+            <Button x:Name="ActionButton" Content="Connect!" Grid.Column="1" Margin="0,0,0,0" Grid.Row="6" d:LayoutOverrides="Height" TabIndex="8" Click="Button_Click_1" IsDefault="True"/>
 
         </Grid>
         <Label x:Name="statusLabel" Content="Status: Ready" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>

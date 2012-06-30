@@ -6,13 +6,24 @@
     <Grid x:Name="layoutGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="23" />
+            <RowDefinition Height="23" />
             <RowDefinition />
         </Grid.RowDefinitions>
         <Grid x:Name="connectionStatusGrid" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="0">
             <Label x:Name="connectionStatusLabel" Content="Connection Status:" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#00000000" Foreground="White"/>
             <Label x:Name="connectionStatusText" Content="Not yet ready" HorizontalAlignment="Left" Margin="109,0,0,0" VerticalAlignment="Top" FontWeight="Bold" Foreground="White" Height="26"/>
         </Grid>
-        <Grid VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="1">
+        <Grid x:Name="nowPlayingGrid" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Label x:Name="nowPlayingLabel" Content="MuseBot NP:" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#00000000" Foreground="White" Grid.Column="0"/>
+            <Label x:Name="nowPlayingText" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Foreground="White" Height="26" Grid.Column="1">
+                <Bold>Not yet ready</Bold>
+            </Label>
+        </Grid>
+        <Grid VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50" />
                 <RowDefinition Height="50" />

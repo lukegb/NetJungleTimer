@@ -38,6 +38,14 @@ namespace NetJungleTimer
             }
         }
 
+        private bool UseSpectatorMode
+        {
+            get
+            {
+                return (SpectatorMode.IsChecked.HasValue && (bool)SpectatorMode.IsChecked);
+            }
+        }
+
         public WelcomeWindow()
         {
             // go go mutex
@@ -57,10 +65,8 @@ namespace NetJungleTimer
                 Version currentVersion = ApplicationDeployment.CurrentDeployment.CurrentVersion;
 #if DEBUG
                 string whatBuild = "+D";
-#elif RELEASE
-                string whatBuild = "";
 #else
-                string whatBuild = "+?";
+                string whatBuild = "";
 #endif
                 versionLabel.Content = String.Format("v{0}{1}", currentVersion.ToString(), whatBuild);
 
@@ -73,10 +79,8 @@ namespace NetJungleTimer
             {
 #if DEBUG
                 string whatBuild = "DEBUG";
-#elif RELEASE
-                string whatBuild = "RELEASE";
 #else
-                string whatBuild = "???";
+                string whatBuild = "RELEASE - not net";
 #endif
                 versionLabel.Content = String.Format("<<DEVELOPMENT BUILD: {0}>>", whatBuild);
             }
@@ -107,7 +111,7 @@ namespace NetJungleTimer
         private void BeginUpdate()
         {
             ApplicationDeployment ad = ApplicationDeployment.CurrentDeployment;
-            //ad.UpdateCompleted += new System.ComponentModel.AsyncCompletedEventHandler(UpdateCompleted);
+            ad.UpdateCompleted += new System.ComponentModel.AsyncCompletedEventHandler(UpdateCompleted);
             ad.UpdateProgressChanged += new DeploymentProgressChangedEventHandler(UpdateProgressChanged);
             ad.UpdateAsync();
         }
@@ -120,8 +124,6 @@ namespace NetJungleTimer
 
         private void UpdateProgressChanged(object sender, DeploymentProgressChangedEventArgs e)
         {
-            if (e.BytesCompleted == e.BytesTotal)
-                UpdateCompleted(sender, null);
             SetStatusLabel(String.Format("Updating... {0:D}%", e.ProgressPercentage));
         }
 
@@ -144,6 +146,7 @@ namespace NetJungleTimer
 
             LocalMode.IsEnabled = GloballyEnabled;
             SpeechSynth.IsEnabled = GloballyEnabled;
+            SpectatorMode.IsEnabled = GloballyEnabled;
 
             ActionButton.IsEnabled = ButtonEnabled;
         }
@@ -240,6 +243,7 @@ namespace NetJungleTimer
             {
                 NetJungleProto = (INetProto)new MockupNetProto();
                 this.OnNetworkMessage(this, new NewNetworkMessageEventArgs("&CONN")); // mock a connected message
+                this.OnNetworkMessage(this, new NewNetworkMessageEventArgs("&LOGGEDIN")); // ...and now logged in
             }
         }
 
@@ -260,7 +264,8 @@ namespace NetJungleTimer
             else if (message == "&LOGGEDIN")
             {
                 mw = new MainWindow(this.m, this, this.NetJungleProto);
-                TextToSpeech.Instance.Enabled = mw.UseSpeechSynth = (bool)SpeechSynth.IsChecked;
+                mw.SpectatorModeActive = UseSpectatorMode;
+                TextToSpeech.Instance.Enabled = mw.UseSpeechSynth = (SpeechSynth.IsChecked.HasValue && (bool)SpeechSynth.IsChecked);
                 App.Current.MainWindow = mw;
                 NetJungleProto.NewNetworkMessage -= new NewNetworkMessageHandler(this.OnNetworkMessage);
                 mw.Show();

@@ -20,6 +20,7 @@ namespace NetJungleTimer.Networking
     public interface INetProto
     {
         bool IsMaster { get; }
+        bool Connected { get; }
 
         void Go();
         void Stop();

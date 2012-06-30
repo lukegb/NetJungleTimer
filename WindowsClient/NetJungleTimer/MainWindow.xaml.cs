@@ -29,6 +29,23 @@ namespace NetJungleTimer
         const int NET_TIMER_TICK = 500;
         const int KEYBOARD_TIMER_TICK = 20;
 
+        private bool _spectatorModeActive = false;
+        public bool SpectatorModeActive
+        {
+            get 
+            {
+                return _spectatorModeActive;
+            }
+
+            set
+            {
+                _spectatorModeActive = (bool)value;
+
+                UpdateJungleTimerOffsets();
+            }
+        }
+        private const int SPECTATOR_OFFSET = 3 * 60;
+
         // our blue, our red, their blue, their red, dragon, baron
         // buffs: 5 mins
         // dragon: 6 mins (2:30)
@@ -89,6 +106,7 @@ namespace NetJungleTimer
             if (netJungleProto is MockupNetProto)
             {
                 this.layoutGrid.RowDefinitions[0].Height = new GridLength(0);
+                this.layoutGrid.RowDefinitions[1].Height = new GridLength(0);
             }
         }
 
@@ -136,7 +154,9 @@ namespace NetJungleTimer
                 new NetworkedTimer(new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"), this.netJungleProto),
                 new NetworkedTimer(new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"), this.netJungleProto),
                 new NetworkedTimer(new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto)
+                new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto),
+
+                new MuseBotNP(nowPlayingText),
             };
 
             foreach (IUIElement iui in uiElements)
@@ -177,6 +197,23 @@ namespace NetJungleTimer
             processingTimer.Start();
         }
 
+        private void SetStatusLine(string NewStatusLine)
+        {
+            StringBuilder sb = new StringBuilder(NewStatusLine);
+
+            if (netJungleProto.Connected && netJungleProto.IsMaster)
+            {
+                sb.Append(" [MAST]");
+            }
+
+            if (SpectatorModeActive)
+            {
+                sb.Append(" [SPEC]");
+            }
+
+            connectionStatusText.Content = sb.ToString();
+        }
+
         public void OnNetworkMessage(object sender, NewNetworkMessageEventArgs e)
         {
             if (!this.Dispatcher.CheckAccess())
@@ -187,25 +224,26 @@ namespace NetJungleTimer
 
             string message = e.NetworkMessage;
 
-            if (message.StartsWith("NETTIMER "))
+            if (message.StartsWith("NETTIMER ") || message.StartsWith("MUSEBOTNP "))
             {
                 foreach (UI.IUIElement iui in uiElements)
                 {
-                    if (!(iui is NetworkedTimer))
+                    if (message.StartsWith("NETTIMER ") && !(iui is NetworkedTimer))
+                        continue;
+                    else if (message.StartsWith("MUSEBOTNP ") && !(iui is MuseBotNP))
                         continue;
 
-                    var netTimer = iui as NetworkedTimer;
-                    netTimer.GotMessage(message);
+                    iui.GotMessage(message);
                 }
             }
             else if (message.StartsWith("!DISCONNECT"))
             {
-                connectionStatusText.Content = "Connection lost";
+                SetStatusLine("Connection lost");
             }
             else if (message.StartsWith("!RECONNECT"))
             {
                 String[] messageSplit = message.Split(new[] { ' ' });
-                connectionStatusText.Content = String.Format("Connect attempt #{0}", messageSplit[1]);
+                SetStatusLine(String.Format("Connect attempt #{0}", messageSplit[1]));
             }
             else if (message.StartsWith("CONN") && netJungleProto.IsMaster)
             {
@@ -214,10 +252,7 @@ namespace NetJungleTimer
 
             if (!message.StartsWith("!")) // internal message
             {
-                if (netJungleProto.IsMaster)
-                    connectionStatusText.Content = "Connected [MASTER]";
-                else
-                    connectionStatusText.Content = "Connected";
+                SetStatusLine("Connected");
             }
         }
 
@@ -360,7 +395,7 @@ namespace NetJungleTimer
                 {
                     konamiCodeSteps = 0;
                     alwaysShowWindow = !alwaysShowWindow;
-                    connectionStatusText.Content = "KONAMI CODE HACKTIVATED";
+                    SetStatusLine("KONAMI CODE HACKTIVATED");
                     this.Visibility = Visibility.Visible;
                     this.Top = 0;
                     this.Left = 0;
@@ -410,6 +445,18 @@ namespace NetJungleTimer
         internal void OnTimerFinalCountdown(object sender, EventArgs e)
         {
             NetworkedTimer nt = sender as NetworkedTimer;
+        }
+
+        private void UpdateJungleTimerOffsets()
+        {
+            foreach (IUIElement iui in uiElements)
+            {
+                if (!(iui is NetworkedTimer))
+                    continue;
+
+                var nt = iui as NetworkedTimer;
+                nt.TimingOffset = SpectatorModeActive ? SPECTATOR_OFFSET : 0;
+            }
         }
 
         public bool UseSpeechSynth { get; set; }
