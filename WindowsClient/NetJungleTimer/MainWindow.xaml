@@ -5,9 +5,9 @@
         Title="MainWindow" Height="350" Width="525" Loaded="Window_Loaded_1" AllowsTransparency="True" Background="#00000000" WindowStyle="None" ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False">
     <Grid x:Name="layoutGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="23" />
-            <RowDefinition Height="23" />
-            <RowDefinition />
+            <RowDefinition Height="23" Name="statusRowDefinition" />
+            <RowDefinition Height="23" Name="nowPlayingRowDefinition" />
+            <RowDefinition Name="summonersRiftRowDefinition" />
         </Grid.RowDefinitions>
         <Grid x:Name="connectionStatusGrid" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Row="0">
             <Label x:Name="connectionStatusLabel" Content="Connection Status:" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#00000000" Foreground="White"/>

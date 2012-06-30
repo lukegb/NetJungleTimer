@@ -24,6 +24,8 @@ namespace NetJungleTimer.Networking
         Thread SendThread;
         Thread PingThread;
 
+        const string PROTOCOL_VERSION = "2";
+
         Queue<String> MessageQueue;
 
         int ReconnectAttempt;
@@ -85,10 +87,23 @@ namespace NetJungleTimer.Networking
                             else if (lineFromServer.StartsWith("&NOTMASTER"))
                             {
                                 IsMaster = false;
+                                this.MessageQueue.Enqueue(String.Format("PROTOVER {0}", LiveNetProto.PROTOCOL_VERSION));
                             }
                             else if (lineFromServer.StartsWith("&NEWMASTER"))
                             {
                                 IsMaster = true;
+                            }
+                            else if (IsMaster && lineFromServer.StartsWith("PROTOVER "))
+                            {
+                                this.MessageQueue.Enqueue(String.Format("CURPROTOVER {0}", LiveNetProto.PROTOCOL_VERSION));
+                            }
+                            else if (!IsMaster && lineFromServer.StartsWith("CURPROTOVER "))
+                            {
+                                string currentProtoVer = lineFromServer.Replace("CURPROTOVER ", "");
+                                if (currentProtoVer != LiveNetProto.PROTOCOL_VERSION)
+                                {
+                                    NotifyUI("!BADLINEVER");
+                                }
                             }
                             Console.WriteLine("<- {0}", lineFromServer);
                             NotifyUI(lineFromServer);

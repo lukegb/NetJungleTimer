@@ -24,6 +24,7 @@ namespace NetJungleTimer
     /// </summary>
     public partial class MainWindow : Window
     {
+
         const int UI_TIMER_TICK = 100;
         const int PROCESSING_TIMER_TICK = 250;
         const int NET_TIMER_TICK = 500;
@@ -46,6 +47,8 @@ namespace NetJungleTimer
         }
         private const int SPECTATOR_OFFSET = 3 * 60;
 
+        MapMode currentMapMode;
+
         // our blue, our red, their blue, their red, dragon, baron
         // buffs: 5 mins
         // dragon: 6 mins (2:30)
@@ -56,6 +59,8 @@ namespace NetJungleTimer
         const int BARON_TIME = 7 * 60;
         const int WARD_TIME = 3 * 60;
         const int INHIBITOR_TIME = 5 * 60;
+
+        internal Dictionary<MapMode, RowDefinition> rowDefs;
 
         DispatcherTimer uiTimer;
         DispatcherTimer processingTimer;
@@ -88,11 +93,17 @@ namespace NetJungleTimer
             Key.A
         };
 
-        public MainWindow(Mutex mut, WelcomeWindow welWin, INetProto netJungleProto)
+        public MainWindow(Mutex mut, WelcomeWindow welWin, INetProto netJungleProto, MapMode selectedMapMode)
         {
             this.m = mut;
+            this.currentMapMode = selectedMapMode;
 
             InitializeComponent();
+
+            rowDefs = new Dictionary<MapMode, RowDefinition>
+            {
+                { MapMode.SUMMONERS_RIFT, summonersRiftRowDefinition }
+            };
 
             this.welWin = welWin;
             this.netJungleProto = netJungleProto;
@@ -105,8 +116,17 @@ namespace NetJungleTimer
 
             if (netJungleProto is MockupNetProto)
             {
-                this.layoutGrid.RowDefinitions[0].Height = new GridLength(0);
-                this.layoutGrid.RowDefinitions[1].Height = new GridLength(0);
+                nowPlayingRowDefinition.Height = new GridLength(0);
+                statusRowDefinition.Height = new GridLength(0);
+            }
+
+            // okay, here goes nothing
+            foreach (KeyValuePair<MapMode, RowDefinition> rowDefKvp in rowDefs)
+            {
+                if (rowDefKvp.Key != selectedMapMode)
+                {
+                    rowDefKvp.Value.Height = new GridLength(0);
+                }
             }
         }
 
@@ -147,17 +167,28 @@ namespace NetJungleTimer
             uiElements = null;
 
             // let's go
-            uiElements = new List<IUIElement>
+            switch (currentMapMode)
             {
-                new NetworkedTimer(new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"), this.netJungleProto),
-                new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto),
+                case MapMode.SUMMONERS_RIFT:
+                    uiElements = new List<IUIElement>
+                    {
+                        new NetworkedTimer(new NetworkedTimerContext(ourBlueImg, BUFF_TIME, "OUR_BLUE", new KeyboardManager.KMKey(Key.NumPad7), "Our blue"), this.netJungleProto),
+                        new NetworkedTimer(new NetworkedTimerContext(ourRedImg, BUFF_TIME, "OUR_RED", new KeyboardManager.KMKey(Key.NumPad4), "Our red"), this.netJungleProto),
+                        new NetworkedTimer(new NetworkedTimerContext(baronImg, BARON_TIME, "BARON", new KeyboardManager.KMKey(Key.NumPad8), "Baron"), this.netJungleProto),
+                        new NetworkedTimer(new NetworkedTimerContext(dragonImg, DRAGON_TIME, "DRAGON", new KeyboardManager.KMKey(Key.NumPad5), "Dragon"), this.netJungleProto),
+                        new NetworkedTimer(new NetworkedTimerContext(theirBlueImg, BUFF_TIME, "THEIR_BLUE", new KeyboardManager.KMKey(Key.NumPad9), "Their blue"), this.netJungleProto),
+                        new NetworkedTimer(new NetworkedTimerContext(theirRedImg, BUFF_TIME, "THEIR_RED", new KeyboardManager.KMKey(Key.NumPad6), "Their red"), this.netJungleProto),
 
-                new MuseBotNP(nowPlayingText),
-            };
+                        new MuseBotNP(nowPlayingText),
+                    };
+                    break;
+                default:
+                    // wtf
+                    throw new Exception("WTF");
+                    break;
+            }
+
+
 
             foreach (IUIElement iui in uiElements)
             {
@@ -230,7 +261,7 @@ namespace NetJungleTimer
                 {
                     if (message.StartsWith("NETTIMER ") && !(iui is NetworkedTimer))
                         continue;
-                    else if (message.StartsWith("MUSEBOTNP ") && !(iui is MuseBotNP))
+                    else if (message.StartsWith("^MUSEBOTNP ") && !(iui is MuseBotNP))
                         continue;
 
                     iui.GotMessage(message);
@@ -244,6 +275,10 @@ namespace NetJungleTimer
             {
                 String[] messageSplit = message.Split(new[] { ' ' });
                 SetStatusLine(String.Format("Connect attempt #{0}", messageSplit[1]));
+            }
+            else if (message == "!BADLINEVER")
+            {
+                welWin.mainWindowAbort("Bad NetJungleTimer version for room.");
             }
             else if (message.StartsWith("CONN") && netJungleProto.IsMaster)
             {

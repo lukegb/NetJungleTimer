@@ -144,6 +144,7 @@ namespace NetJungleTimer
             GameName.IsEnabled = NetworkingEnabled;
             ServerPassword.IsEnabled = NetworkingEnabled;
 
+            GameMap.IsEnabled = GloballyEnabled;
             LocalMode.IsEnabled = GloballyEnabled;
             SpeechSynth.IsEnabled = GloballyEnabled;
             SpectatorMode.IsEnabled = GloballyEnabled;
@@ -233,7 +234,7 @@ namespace NetJungleTimer
                 String[] remote_server_port_bits = ServerHost.Text.Split(new char[] { ':' }, 2);
                 String RemoteServer = remote_server_port_bits[0];
                 int RemotePort = (int)uint.Parse(remote_server_port_bits[1]);
-                String RemoteRoom = GameName.Text;
+                String RemoteRoom = String.Format("{0}:{1}", GameName.Text, ((ComboBoxItem)GameMap.SelectedItem).Tag);
 
                 NetJungleProto = (INetProto)new LiveNetProto(RemoteServer, RemotePort, UserName.Text, ServerPassword.Password, RemoteRoom);
                 NetJungleProto.NewNetworkMessage += new NewNetworkMessageHandler(this.OnNetworkMessage);
@@ -263,7 +264,7 @@ namespace NetJungleTimer
             }
             else if (message == "&LOGGEDIN")
             {
-                mw = new MainWindow(this.m, this, this.NetJungleProto);
+                mw = new MainWindow(this.m, this, this.NetJungleProto, (MapMode)int.Parse(((ComboBoxItem)this.GameMap.SelectedItem).Tag as string));
                 mw.SpectatorModeActive = UseSpectatorMode;
                 TextToSpeech.Instance.Enabled = mw.UseSpeechSynth = (SpeechSynth.IsChecked.HasValue && (bool)SpeechSynth.IsChecked);
                 App.Current.MainWindow = mw;
@@ -292,6 +293,17 @@ namespace NetJungleTimer
 
                 ServerPassword.Background = new SolidColorBrush(Colors.PaleVioletRed);
                 ServerPassword.Focus();
+            }
+            else if (message == "!BADLINEVER")
+            {
+                RunningMain = false;
+
+                NetJungleProto.Stop();
+                NetJungleProto = null;
+
+                SetStatusLabel("Error: that room requires a different client version.");
+                ActionButton.Content = "Connect";
+                SetFormFieldsEnabled(true, true);
             }
             else if (message == "!RECONNECT 4")
             {
@@ -357,6 +369,13 @@ namespace NetJungleTimer
                 ActionButton.Content = "Start";
             else
                 ActionButton.Content = "Connect";
+        }
+
+        internal void mainWindowAbort(String whatMessage)
+        {
+            Button_Click_1(null, null);
+
+            SetStatusLabel(whatMessage);
         }
     }
 }

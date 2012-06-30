@@ -113,6 +113,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DXScanCode.cs" />
+    <Compile Include="MapMode.cs" />
     <Compile Include="Networking\MockupNetProto.cs" />
     <Compile Include="Networking\INetProto.cs" />
     <Compile Include="TextToSpeech.cs" />

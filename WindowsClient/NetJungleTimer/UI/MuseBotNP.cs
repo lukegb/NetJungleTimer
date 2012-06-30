@@ -46,8 +46,8 @@ namespace NetJungleTimer.UI
             }
             else
             {
-                bool ShouldShowAlbum = stripMessage.Length < 60;
-                bool ShouldShowArtist = stripMessage.Length < 40;
+                bool ShouldShowAlbum = stripMessage.Length < 120;
+                bool ShouldShowArtist = stripMessage.Length < 100;
 
                 Tuple<String, String> tmpTuple;
 
